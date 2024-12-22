@@ -1,0 +1,15 @@
+{
+    "port": "COM3",
+    "configuration": "JTAGAdapter=default,PSRAM=disabled,PartitionScheme=custom,CPUFreq=240,FlashMode=qio,FlashFreq=80,FlashSize=4M,UploadSpeed=921600,LoopCore=1,EventsCore=1,DebugLevel=none,EraseFlash=none,ZigbeeMode=default",
+    "board": "esp32:esp32:esp32",
+    "output": ".\\build",
+    "sketch": "CNC Router Handwheel - Firmware.ino",
+    "programmer": "esptool",
+    "prebuild": "@if exist .build (rd /s /q .build)",
+    "buildPreferences": [
+        [
+            "compiler.cpp.extra_flags",
+            "-DARDUINO_LOOP_STACK_SIZE=16384 -MMD -c"
+        ]
+    ]
+}
