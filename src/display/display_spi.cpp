@@ -1,8 +1,9 @@
+
+// Copyright (c) Thor Schueler. All rights reserved.
+// SPDX-License-Identifier: MIT
 // IMPORTANT: LIBRARY MUST BE SPECIFICALLY CONFIGURED FOR EITHER TFT SHIELD
 // OR BREAKOUT BOARD USAGE.
 
-// Lcdwiki GUI library with init code from Rossum
-// MIT license
 #include <SPI.h>
 #include "pins_arduino.h"
 #include "wiring_private.h"

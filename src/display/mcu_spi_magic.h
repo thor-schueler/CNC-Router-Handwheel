@@ -1,3 +1,6 @@
+// Copyright (c) Thor Schueler. All rights reserved.
+// SPDX-License-Identifier: MIT
+
 #ifndef _mcu_spi_magic_
 #define _mcu_spi_magic_
 

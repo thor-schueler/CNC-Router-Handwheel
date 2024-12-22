@@ -1,3 +1,5 @@
+// Copyright (c) Thor Schueler. All rights reserved.
+// SPDX-License-Identifier: MIT
 /*
 This is the core GUI library for the TFT display, providing a common
 set of graphics primitives (points, lines, circles, etc.).  It needs to be
@@ -15,8 +17,6 @@ INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
 CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
-
-MIT License
 */
 
 #include "display_gui.h"

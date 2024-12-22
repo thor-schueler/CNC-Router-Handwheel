@@ -1,3 +1,5 @@
+// Copyright (c) Thor Schueler. All rights reserved.
+// SPDX-License-Identifier: MIT
 ///
 /// ILI9488 Register Designations
 ///

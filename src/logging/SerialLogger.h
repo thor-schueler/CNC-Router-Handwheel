@@ -1,5 +1,5 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
-// Copyright (c) Avanade. All rights reserved.
+// Copyright (c) Thor Schueler. All rights reserved.
 // SPDX-License-Identifier: MIT
 
 #ifndef SERIALLOGGER_H

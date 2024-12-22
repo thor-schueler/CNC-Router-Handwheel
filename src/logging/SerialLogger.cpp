@@ -1,10 +1,13 @@
 // Copyright (c) Microsoft Corporation. All rights reserved.
-// Copyright (c) Avanade. All rights reserved.
+// Copyright (c) Thor Schueler. All rights reserved.
 // SPDX-License-Identifier: MIT
 
-#include "SerialLogger.h"
+#include <Arduino.h>
 #include <time.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <stdarg.h>
+#include "SerialLogger.h"
 
 #define UNIX_EPOCH_START_YEAR 1900
 
@@ -146,7 +149,6 @@ void SerialLogger::writeTime()
   time_t now = time(NULL);
 
   ptm = localtime(&now);
-
   Serial.print(ptm->tm_year + UNIX_EPOCH_START_YEAR);
   Serial.print("/");
   Serial.print(ptm->tm_mon + 1);

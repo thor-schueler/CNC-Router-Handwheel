@@ -1,3 +1,6 @@
+// Copyright (c) Thor Schueler. All rights reserved.
+// SPDX-License-Identifier: MIT
+
 #ifndef _DISPLAY_SPI_H_
 #define _DISPLAY_SPI_H_
 
