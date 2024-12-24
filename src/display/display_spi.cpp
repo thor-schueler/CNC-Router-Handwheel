@@ -10,13 +10,14 @@
 #include "display_spi.h"
 #include "lcd_spi_registers.h"
 #include "mcu_spi_magic.h"
+#include "../logging/SerialLogger.h"
 
 #define TFTLCD_DELAY16  0xFFFF
 #define TFTLCD_DELAY8   0x7F
 #define MAX_REG_NUM     24
 
 
-static uint8_t display_buffer[WIDTH * HEIGHT] = {0};
+static uint8_t display_buffer[WIDTH * HEIGHT * 3] = {0};
 
 /**
  * @brief Generates a new instance of the DISPLAY_SPI class. 
@@ -36,13 +37,24 @@ DISPLAY_SPI::DISPLAY_SPI()
 
 	spi = new SPIClass(HSPI);
   	spi->begin();
+	spi->setFrequency(60000000);
   	spi->setBitOrder(MSBFIRST);
 	spi->setDataMode(SPI_MODE0);
 
 	xoffset = 0;
 	yoffset = 0;
 	rotation = 0;
+	width = WIDTH;
+	height = HEIGHT;
 	setWriteDir();
+
+	int c = random(65535);
+	for(int i=0; i<WIDTH * HEIGHT * 3; i +=3)
+	{
+		display_buffer[i]  = (uint8_t)((c >> 8) & 0xF8);
+		display_buffer[i+1]= (uint8_t)((c >> 3) & 0xFC);
+		display_buffer[i+2]= (uint8_t)(c << 3);
+	}
 }
 
 #pragma region public methods
@@ -128,7 +140,9 @@ void DISPLAY_SPI::draw_pixel(int16_t x, int16_t y, uint16_t color)
  */
 void DISPLAY_SPI::fill_rect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color)
 {
-	int16_t end;
+	int16_t end; 
+	uint8_t *buffer;
+	uint16_t i;
 	if (w < 0) 
 	{
         w = -w;
@@ -157,26 +171,40 @@ void DISPLAY_SPI::fill_rect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t
     if (end > get_height())
     {
         end = get_height();
-    }
-    h = end - y;
-    set_addr_window(x, y, x + w - 1, y + h - 1);
-	CS_ACTIVE;
-	writeCmd8(CC);		
-	if (h > w) 
-	{
-        end = h;
-        h = w;
-        w = end;
-    }
-	while (h-- > 0) 
-	{
-		end = w;
-		do 
-		{
-			writeData18(color);
-		} while (--end != 0);
 	}
-	CS_IDLE;
+    h = end - y;
+	if(false)
+	{
+		buffer = new uint8_t[(size_t)(h*3)];
+		for(i=0; i<h*3; i+=3) 
+		{
+			buffer[i]  = (uint8_t)((color >> 8) & 0xF8);
+			buffer[i+1]= (uint8_t)((color >> 3) & 0xFC);
+			buffer[i+2]= (uint8_t)(color << 3);
+		}
+		set_addr_window(x, y, x + w - 1, y + h);
+			// reducing w by one when setting the address window is important. 
+			// the frame memory is written x,y x+1,y, ..., x+w-1,y, x,y+1, ... 
+			// so if we do not reduce by 1, we have an extra line.... 
+		CS_ACTIVE;
+		writeCmd8(CC);
+		CD_DATA;
+		for (i=0; i<w; i++)
+		{
+			spi->transferBytes(buffer, nullptr, h*3);
+		} 
+		CS_IDLE;
+		delete[] buffer;
+	}
+	else
+	{
+		set_addr_window(x, y, x + w - 1, y + h);
+		CS_ACTIVE;
+		writeCmd8(CC);
+		CD_DATA;
+		spi->transferBytes(display_buffer, nullptr, WIDTH * HEIGHT * 3);
+		CS_IDLE;
+	}
 }
 
 /**
@@ -335,9 +363,10 @@ void DISPLAY_SPI::reset()
  */
 void DISPLAY_SPI::set_rotation(uint8_t r)
 {
+	//return;
     rotation = r & 3;           // just perform the operation ourselves on the protected variables
-    width = (rotation & 1) ? WIDTH : HEIGHT;
-    height = (rotation & 1) ? HEIGHT : WIDTH;
+    width = (rotation & 1) ? HEIGHT : WIDTH;
+    height = (rotation & 1) ? WIDTH : HEIGHT;
 	CS_ACTIVE;
 
 	uint8_t val;
@@ -357,7 +386,7 @@ void DISPLAY_SPI::set_rotation(uint8_t r)
 		    break;
 	}
 	writeCmdData8(MD, val); 
- 	set_addr_window(0, 0, width - 1, height - 1);
+ 	set_addr_window(0, 0, width, height);
 	vert_scroll(0, HEIGHT, 0);
 	CS_IDLE;
 }
@@ -500,13 +529,23 @@ uint16_t DISPLAY_SPI::read_reg(uint16_t reg, int8_t index)
  * @param x2 - Lower right x
  * @param y2 - Lower right y
  */
-void DISPLAY_SPI::set_addr_window(int16_t x1, int16_t y1, int16_t x2, int16_t y2)
+void DISPLAY_SPI::set_addr_window(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2)
 {
 	CS_ACTIVE;
-	uint8_t x_buf[] = {x1>>8,x1&0xFF,x2>>8,x2&0xFF};
-	uint8_t y_buf[] = {y1>>8,y1&0xFF,y2>>8,y2&0xFF};
+	uint8_t x_buf[] = {x1>>8,x1,x2>>8,x2};
+	uint8_t y_buf[] = {y1>>8,y1,y2>>8,y2};
 	push_command(XC, x_buf, 4);
+		// Send Column Address Set Command 
+		// This command is used to define the area of the frame memory that the MCU can access. This command makes no change on 
+		// the other driver status. The values of SC [15:0] (first and second data bytes) and EC [15:0] (third and fourth data bytes) 
+		// are referred when RAMWR command is applied. Each value 
+		// represents one column line in the Frame Memory.
 	push_command(YC, y_buf, 4);
+		// Send Page Address Set Command
+		// This command is used to define the area of the frame memory that the MCU can access. This command makes no change on 
+		// the other driver status. The values of SP [15:0] (first and second data bytes) and EP [15:0] (third and fourth data bytes) 
+		// are referred when RAMWR command is applied. Each value 
+		// represents one Page line in the Frame Memory.  
 	CS_IDLE;		
 }
 
@@ -524,28 +563,90 @@ void DISPLAY_SPI::start_display()
 	XC=ILI9488_COLADDRSET,YC=ILI9488_PAGEADDRSET,CC=ILI9488_MEMORYWRITE,RC=HX8357_RAMRD,SC1=0x33,SC2=0x37,MD=ILI9488_MADCTL,VL=0,R24BIT=1;
 	static const uint8_t ILI9488_regValues[] PROGMEM = 
 	{
-		0xF7, 4, 0xA9, 0x51, 0x2C, 0x82,
-		0xC0, 2, 0x11, 0x09,
-		0xC1, 1, 0x41,
-		0xC5, 3, 0x00, 0x0A, 0x80,
-		0xB1, 2, 0xB0, 0x11,
-		0xB4, 1, 0x02,
-		0xB6, 2, 0x02, 0x22,
-		0xB7, 1, 0xC6,
-		0xBE, 2, 0x00, 0x04,
-		0xE9, 1, 0x00,
-		0x36, 1, 0x08,
-		0x3A, 1, 0x66,
+		0xF7, 4, 0xA9, 0x51, 0x2C, 0x82,	// Send Adjust Control 3 command 
+											// First parameter - constant
+											// Second parameter - constant
+											// Third parameter - constant
+											// Fourth parameter - DSI write DCS command, use loose packet RGB 666
+		0xC0, 2, 0x11, 0x09,				// Send Power Control 1 command
+											// First parameter - Set the VREG1OUT voltage for positive gamma 1.25 x 3.70 = 4.6250
+											// Second parameter - Set the VREG2OUT voltage for negative gammas -1.25 x 3.30 = -4.1250 
+		0xC1, 1, 0x41,						// Send Power Control 2  command
+											// First parameter - Set the factor used in the step-up circuits.
+                          					//    DDVDH = VCI x 2
+                          					//    DDVDL = -(VCI x 2)
+                          					//    VCL = -VCI
+                          					//    VGH = VCI x 6
+                          					//    VGL = -VCI x 4
+		0xC5, 3, 0x00, 0x0A, 0x80,			// Send VCOM Control command  
+											// First parameter - NV memory is not programmed
+											// Second parameter - Used to set the factor to generate VCOM voltage from the reference voltage VREG2OUT.  VCOM = -1.75 
+											// Third parameter - Select the Vcom value from VCM_REG [7:0] or NV memory. 1: VCOM value from VCM_REG [7:0].
+		0xB1, 2, 0xB0, 0x11,				// Send Frame Rate Control (In Normal Mode/Full Colors)
+											// First parameter - 
+					                        //    Set division ratio for internal clocks when Normal mode: 00 - Fosc
+                          					//    Set the frame frequency of full color normal mode: CNT = 17, Frame Rate 60.76 
+											// Second parameter - Is used to set 1H (line) period of the Normal mode at the MCU interface: 17 clocks
+		0xB4, 1, 0x02,						// Send Display Inversion Control command
+											// First Parameter - set the Display Inversion mode: 2 dot inversion
+		0xB6, 2, 0x02, 0x22,				// Send Display Function Control command
+											// First parameter -
+                          					//    0000 0010
+                          					//    0           Select the display data path (memory or direct to shift register) when the RGB interface is used. Bypass - Memory
+                          					//     0          RCM RGB interface selection (refer to the RGB interface section). DE Mode
+                          					//      0         Select the interface to access the GRAM. When RM = 0, the driver will write display data to the GRAM via the system 
+                          					//                interface, and the driver will write display data to the GRAM via the RGB interface when RM = 1.
+                          					//       0        Select the display operation mode: Internal system clock  
+                          					//         00     Set the scan mode in a non-display area: Normal scan
+                          					//           10   Determine source/VCOM output in a non-display area in the partial display mode: AGND   
+											// Second parameter - 
+                          					//     0010 0010  
+                          					//     00         Set the direction of scan by the gate driver: G1 -> G480
+                          					//       1        Select the shift direction of outputs from the source driver: S960 -> S1        
+                          					//        0       Set the gate driver pin arrangement in combination with the GS bit (RB6h) to select the optimal scan mode for the module: G1->G2->G3->G4 ………………… G477->G478->G479->G480 
+                          					//          0010  Set the scan cycle when the PTG selects interval scan in a non-display area drive period. The scan cycle is defined 
+                          					//                by n frame periods, where n is an odd number from 3 to 31. The polarity of liquid crystal drive voltage from the gate driver is 
+                          					//                inverted in the same timing as the interval scan cycle: 5 frames (84ms)
+		0xB7, 1, 0xC6,						// Send Entry Mode Set command
+											// First parameter - 
+                          					//    1100 0110
+                          					//    1100        Set the data format when 16bbp (R, G, B) to 18 bbp (R, G, B) is stored in the internal GRAM. See ILI9488 datasheet 
+                          					//         0      The ILI9488 driver enters the Deep Standby Mode when the DSTB is set to high (= 1). In the Deep Standby mode, 
+                          					//                both internal logic power and SRAM power are turned off, the display data are stored in the Frame Memory, and the 
+                          					//                instructions are not saved. Rewrite Frame Memory content and instructions after exiting the Deep Standby Mode.
+                          					//          11    Set the output level of the gate driver G1 ~ G480 as follows: Normal display  
+                          					//            0   Low voltage detection control: Enable		
+		0xBE, 2, 0x00, 0x04,				// Send HS Lanes Control command
+											// First parameter - Type 1 
+											// Second parameter - ESD protection: on
+		0xE9, 1, 0x00,						// Send Set Image Function command
+											// First parameter -  Enable 24-bits Data Bus; users can use DB23~DB0 as 24-bits data input: off
+		0x36, 1, 0x08,						// Send Memory Access Control command
+											// First parameter - see datasheet 
+                          					//    0000 1000   
+                          					//    0         MY - Row Address Order
+                          					//     0        MX - Column Access Order
+                          					//      0       MV - Row/Column Exchange
+                          					//       0      ML - Vertical Refresh Order
+                          					//         1    BGR- RBG-BGR Order
+                          					//          0   MH - Horizontal Refresh Order
+		0x3A, 1, 0x66,						// Send Interface Pixel Format command
+											// First parameter - 
+                          					//    0110 0110
+                          					//    0110      RGB Interface Format 18bits/pixel
+                          					//         0110 MCU Interface Format 18bits/pixel
 		0xE0, 15, 0x00, 0x07, 0x10, 0x09, 0x17, 0x0B, 0x41, 0x89, 0x4B, 0x0A, 0x0C, 0x0E, 0x18, 0x1B, 0x0F,
+											// Send PGAMCTRL(Positive Gamma Control) command
+											// Parameters 1 - 15 - Set the gray scale voltage to adjust the gamma characteristics of the TFT panel.
 		0xE1, 15, 0x00, 0x17, 0x1A, 0x04, 0x0E, 0x06, 0x2F, 0x45, 0x43, 0x02, 0x0A, 0x09, 0x32, 0x36, 0x0F,
-		0x11, 0,
-		//TFTLCD_DELAY8, 120,
-		0x29, 0
+											// Send NGAMCTRL(Negative Gamma Control) command 
+											// Parameters 1 - 15 - Set the gray scale voltage to adjust the gamma characteristics of the TFT panel.
+		0x11, 0,							// Send Sleep OUT command 	
+		0x29, 0								// Send Display On command
 	};
 	init_table8(ILI9488_regValues, sizeof(ILI9488_regValues));
-
-	//set_rotation(rotation); 
-	//invert_display(false);
+	set_rotation(rotation); 
+	invert_display(false);
 }
 
 /**
@@ -636,7 +737,7 @@ void DISPLAY_SPI:: init_table16(const void *table, int16_t size)
 void DISPLAY_SPI::push_command(uint8_t cmd, uint8_t *data, int8_t data_size)
 {
   	CS_ACTIVE;
-	writeCmd16(cmd);
+	writeCmd8(cmd);
 	while (data_size-- > 0) 
 	{
         uint8_t u8 = *data++;
@@ -697,6 +798,4 @@ void DISPLAY_SPI::write_cmd_data(uint16_t cmd, uint16_t data)
 	CS_IDLE;
 }
 #pragma endregion
-
-
 

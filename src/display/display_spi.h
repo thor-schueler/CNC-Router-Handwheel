@@ -168,7 +168,7 @@ class DISPLAY_SPI:public DISPLAY_GUI
 		 * @param x2 - Lower right x
 		 * @param y2 - Lower right y
 		 */
-		void set_addr_window(int16_t x1, int16_t y1, int16_t x2, int16_t y2);
+		void set_addr_window(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2);
 
 		/**
 		 * @brief Starts the display, initializes registers
@@ -237,8 +237,8 @@ class DISPLAY_SPI:public DISPLAY_GUI
 		 */
 		void write_cmd_data(uint16_t cmd, uint16_t data);
 
-		uint8_t width = WIDTH;
-		uint8_t height = HEIGHT;
+		unsigned int width = WIDTH;
+		unsigned int height = HEIGHT;
 		uint16_t XC,YC,CC,RC,SC1,SC2,MD,VL,R24BIT;
 		SPIClass *spi = NULL;
 		volatile uint32_t *spicsPort, *spicdPort, *spimisoPort , *spimosiPort, *spiclkPort;

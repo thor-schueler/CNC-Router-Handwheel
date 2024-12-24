@@ -21,8 +21,8 @@
 #define SID   13
 #define SCK   14
 
-#define WIDTH 480
-#define HEIGHT 320
+#define WIDTH 320
+#define HEIGHT 480
 
 #define CD_COMMAND  (digitalWrite(RS,LOW))    
 #define CD_DATA     (digitalWrite(RS,HIGH)) 
@@ -42,7 +42,7 @@
 #define writeData8(x)  CD_DATA; write8(x) 
 #define writeCmd16(x)  CD_COMMAND; write16(x)
 #define writeData16(x)  CD_DATA; write16(x)
-#define writeData18(x)  CD_DATA; write8((x>>8)&0xF8);write8((x>>3)&0xFC);write8(x<<3)
+#define writeData18(x)  CD_DATA; write8((x>>8)&0xF8); write8((x>>3)&0xFC); write8(x<<3)
 #define writeCmdData8(a, d) CD_COMMAND; write8(a); CD_DATA; write8(d)
 #define writeCmdData16(a, d)  CD_COMMAND; write8(a>>8); write8(a); CD_DATA; write8(d>>8); write8(d)
 

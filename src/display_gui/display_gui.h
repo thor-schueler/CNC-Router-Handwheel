@@ -383,7 +383,7 @@ class DISPLAY_GUI
 		 * @param x2 - Lower right x
 		 * @param y2 - Lower right y
 		 */
-		virtual void set_addr_window(int16_t x1, int16_t y1, int16_t x2, int16_t y2)=0;
+		virtual void set_addr_window(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2)=0;
 
 		/**
 		 * @brief Read graphics RAM data

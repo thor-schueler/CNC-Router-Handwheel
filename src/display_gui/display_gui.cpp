@@ -186,15 +186,20 @@ void DISPLAY_GUI::draw_pixel(int16_t x, int16_t y)
 void DISPLAY_GUI::draw_rectangle(int16_t x1, int16_t y1, int16_t x2, int16_t y2)
 { 
 	int16_t w = x2 - x1 + 1, h = y2 - y1 + 1;
+		//
+		// coordinates are zero based
+		//
 	if (w < 0) 
 	{ 
 		x1 = x2; 
-		w = -w; 
+		w = -w + 2; 
+		x2 = x1 + w -1;
 	}
 	if (h < 0) 
 	{ 
 		y1 = y2; 
-		h = -h; 
+		h = -h + 2; 
+		y2 = y1 + h -1;
 	}
 	draw_fast_hline(x1, y1, w);
   	draw_fast_hline(x1, y2, w);
