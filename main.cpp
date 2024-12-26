@@ -96,56 +96,7 @@ DISPLAY_SPI *display = NULL;
 //}
 
 
-/**
- * @brief Performs system setup activities, including connecting to WIFI, setting time, obtaining the IoTHub info 
- * from DPS if necessary and connecting the IoTHub. Use this method to also register various delegates and command
- * handlers.
- * 
- */
-void setup()
-{
-  int wifi_try_counter = 0;
-
-  Logger.Info_f(F("Copyright 2024, Thor Schueler, Firmware Version: %s"), "0.00.00");
-  Logger.Info_f(F("Loop task stack size: %i"), getArduinoLoopTaskStackSize());
-  Logger.Info_f(F("Loop task stack high water mark: %i"), uxTaskGetStackHighWaterMark(NULL));
-  Logger.Info_f(F("Total heap: %d"), ESP.getHeapSize()); 
-  Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap()); 
-  Logger.Info_f(F("Total PSRAM: %d"), ESP.getPsramSize()); 
-  Logger.Info_f(F("Free PSRAM: %d"), ESP.getFreePsram());
-
-  if(AP_ENABLE_PIN == 0)
-  {
-    //config.StartAP();
-  }
-  else
-  {
-    //Logger.Info_f(F("Checking Configuration AP Enable on pin GPIO%i."), AP_ENABLE_PIN);
-    //pinMode(AP_ENABLE_PIN, INPUT_PULLUP); 
-    //if(digitalRead(AP_ENABLE_PIN) == HIGH)
-    //{
-    //  Logger.Info_f(F("Config AP enabled. Pull GPIO%i low to disable the Config AP."), AP_ENABLE_PIN);
-    //  config.StartAP();
-    //}
-    //else
-    //{
-    //  Logger.Info_f(F("Config AP disabled. Do not pull GPIO%i low to enable the Config AP."), AP_ENABLE_PIN);  
-    //}
-  }
-  
-  Logger.Info("... Startup\n");
-  display = new DISPLAY_SPI();
-  display->set_rotation(3);
-  display->init();
-  Logger.Info("... LCD Init done");
-}
-
-/**
- * @brief Main loop. Use this loop to execute recurring tasks. In this sample, we will periodically send telemetry
- * and query and update the device twin.  
- * 
- */
-void loop()
+void test_display()
 {
   display->fill_screen(0xf800);
   display->fill_screen(0x07E0);
@@ -204,4 +155,60 @@ void loop()
   display->set_text_size(6);
   display->print_string("The End", 20, 200);
   vTaskDelay(1000);
+}
+
+/**
+ * @brief Performs system setup activities, including connecting to WIFI, setting time, obtaining the IoTHub info 
+ * from DPS if necessary and connecting the IoTHub. Use this method to also register various delegates and command
+ * handlers.
+ * 
+ */
+void setup()
+{
+  int wifi_try_counter = 0;
+
+  Logger.Info_f(F("Copyright 2024, Thor Schueler, Firmware Version: %s"), "0.00.00");
+  Logger.Info_f(F("Loop task stack size: %i"), getArduinoLoopTaskStackSize());
+  Logger.Info_f(F("Loop task stack high water mark: %i"), uxTaskGetStackHighWaterMark(NULL));
+  Logger.Info_f(F("Total heap: %d"), ESP.getHeapSize()); 
+  Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap()); 
+  Logger.Info_f(F("Total PSRAM: %d"), ESP.getPsramSize()); 
+  Logger.Info_f(F("Free PSRAM: %d"), ESP.getFreePsram());
+
+  if(AP_ENABLE_PIN == 0)
+  {
+    //config.StartAP();
+  }
+  else
+  {
+    //Logger.Info_f(F("Checking Configuration AP Enable on pin GPIO%i."), AP_ENABLE_PIN);
+    //pinMode(AP_ENABLE_PIN, INPUT_PULLUP); 
+    //if(digitalRead(AP_ENABLE_PIN) == HIGH)
+    //{
+    //  Logger.Info_f(F("Config AP enabled. Pull GPIO%i low to disable the Config AP."), AP_ENABLE_PIN);
+    //  config.StartAP();
+    //}
+    //else
+    //{
+    //  Logger.Info_f(F("Config AP disabled. Do not pull GPIO%i low to enable the Config AP."), AP_ENABLE_PIN);  
+    //}
+  }
+  
+  Logger.Info("... Startup\n");
+  display = new DISPLAY_SPI();
+  display->set_rotation(3);
+  display->init();
+  Logger.Info("... LCD Init done");
+  //test_display();
+}
+
+/**
+ * @brief Main loop. Use this loop to execute recurring tasks. In this sample, we will periodically send telemetry
+ * and query and update the device twin.  
+ * 
+ */
+void loop()
+{
+  display->draw_background(lcars, lcars_size);
+  vTaskDelay(5000);
 }

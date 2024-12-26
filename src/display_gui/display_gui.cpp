@@ -20,7 +20,6 @@ POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "display_gui.h"
-#include "font.c"
 
 #define swap(a, b) { int16_t t = a; a = b; b = t; }
 

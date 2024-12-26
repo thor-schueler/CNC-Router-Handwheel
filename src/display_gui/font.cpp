@@ -19,11 +19,9 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef FONT5X7_H
-#define FONT5X7_H
+#include "display_gui.h"
 
-
-static const unsigned char lcd_font[] = 
+const unsigned char lcd_font[] PROGMEM = 
 {
     0x00, 0x00, 0x00, 0x00, 0x00,   
 	0x3E, 0x5B, 0x4F, 0x5B, 0x3E, 	
@@ -281,4 +279,3 @@ static const unsigned char lcd_font[] =
 	0x00, 0x3C, 0x3C, 0x3C, 0x3C, 
 	0x00, 0x00, 0x00, 0x00, 0x00, 
 };
-#endif

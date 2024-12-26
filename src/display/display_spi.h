@@ -30,6 +30,8 @@ class DISPLAY_SPI:public DISPLAY_GUI
 		 */
 		uint16_t RGB_to_565(uint8_t r, uint8_t g, uint8_t b);
 
+		void draw_background(const unsigned char* image, size_t size);
+
 		/**
 		 * @brief Draws a bitmap on the display
 		 * @param x - X coordinate of the upper left corner

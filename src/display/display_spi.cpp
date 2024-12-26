@@ -17,7 +17,7 @@
 #define MAX_REG_NUM     24
 
 
-static uint8_t display_buffer[WIDTH * HEIGHT * 3] = {0};
+static const uint8_t display_buffer[WIDTH * HEIGHT * 3] PROGMEM = {0};
 
 /**
  * @brief Generates a new instance of the DISPLAY_SPI class. 
@@ -47,14 +47,6 @@ DISPLAY_SPI::DISPLAY_SPI()
 	width = WIDTH;
 	height = HEIGHT;
 	setWriteDir();
-
-	int c = random(65535);
-	for(int i=0; i<WIDTH * HEIGHT * 3; i +=3)
-	{
-		display_buffer[i]  = (uint8_t)((c >> 8) & 0xF8);
-		display_buffer[i+1]= (uint8_t)((c >> 3) & 0xFC);
-		display_buffer[i+2]= (uint8_t)(c << 3);
-	}
 }
 
 #pragma region public methods
@@ -69,6 +61,17 @@ uint16_t DISPLAY_SPI::RGB_to_565(uint8_t r, uint8_t g, uint8_t b)
 {
 	return ((r& 0xF8) << 8) | ((g & 0xFC) << 3) | ((b & 0xF8) >> 3);
 }
+
+void DISPLAY_SPI::draw_background(const unsigned char* image, size_t size)
+{
+	set_addr_window(0, 0, width - 1, height);
+	CS_ACTIVE;
+	writeCmd8(CC);
+	CD_DATA;
+	spi->transferBytes(image, nullptr, size);
+	CS_IDLE;
+}
+
 
 /**
  * @brief Draws a bitmap on the display
@@ -173,7 +176,7 @@ void DISPLAY_SPI::fill_rect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t
         end = get_height();
 	}
     h = end - y;
-	if(false)
+	if(true)
 	{
 		buffer = new uint8_t[(size_t)(h*3)];
 		for(i=0; i<h*3; i+=3) 
@@ -635,6 +638,10 @@ void DISPLAY_SPI::start_display()
                           					//    0110 0110
                           					//    0110      RGB Interface Format 18bits/pixel
                           					//         0110 MCU Interface Format 18bits/pixel
+											// using 0x66 sends data as 3 data bytes per pixel, each byte using the lower 6 bits for color information. 
+											// it is also possible for use 0x65 to configure for 565 RGB values. This results in better performance but loss of
+											// some color depth. In 565 mode, each pixel gets a 16bit color information (565). This means 30% less data over the buss
+											// and 30% less memory requirements. 
 		0xE0, 15, 0x00, 0x07, 0x10, 0x09, 0x17, 0x0B, 0x41, 0x89, 0x4B, 0x0A, 0x0C, 0x0E, 0x18, 0x1B, 0x0F,
 											// Send PGAMCTRL(Positive Gamma Control) command
 											// Parameters 1 - 15 - Set the gray scale voltage to adjust the gamma characteristics of the TFT panel.

@@ -23,12 +23,17 @@ POSSIBILITY OF SUCH DAMAGE.
 #define _DISPLAY_GUI_H_
 
 #include "Arduino.h"
+#include <pgmspace.h>
 
 #define pgm_read_byte(addr) (*(const unsigned char *)(addr))
 #define pgm_read_word(addr) (*(const unsigned short *)(addr))
 #define LEFT 0
 #define RIGHT 9999
 #define CENTER 9998
+
+extern const unsigned char lcd_font[] PROGMEM;
+extern const unsigned char lcars[] PROGMEM;
+extern const size_t lcars_size;
 
 class DISPLAY_GUI
 {
@@ -45,6 +50,9 @@ class DISPLAY_GUI
 		/// @param b - blue component value
 		/// @return integer with the 565 representation of the color. 
 		virtual uint16_t RGB_to_565(uint8_t r, uint8_t g, uint8_t b)=0;
+
+
+		virtual void draw_background(const unsigned char* image, size_t size)=0;
 
 		/**
 		 * @brief Draws a pixel of a certain color at a certain location
