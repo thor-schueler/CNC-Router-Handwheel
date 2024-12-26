@@ -96,64 +96,71 @@ DISPLAY_SPI *display = NULL;
 //}
 
 
-void test_display()
+void test_display(int x1, int y1, int x2, int y2)
 {
-  display->fill_screen(0xf800);
-  display->fill_screen(0x07E0);
-  display->fill_screen(0x001F);
-  display->fill_screen(0x0);
+  int w = x2-x1;
+  int h = y2-y1;
+
+  display->fill_rect(x1, y1, w, h, 0xf800);
+  vTaskDelay(500);
+  display->fill_rect(x1, y1, w, h, 0x07E0);
+  vTaskDelay(500);
+  display->fill_rect(x1, y1, w, h, 0x001F);
+  vTaskDelay(500);
+  display->fill_rect(x1, y1, w, h, 0x0);
   for(int i=0;i<50;i++)
   {
     display->set_draw_color(random(65535));
     display->draw_rectangle(
-      random(display->get_width()), 
-      random(display->get_height()),
-      random(display->get_width()),
-      random(display->get_height())
+      x1 + random(w), 
+      y1 + random(h),
+      x1 + random(w),
+      y1 + random(h)
     );
     vTaskDelay(100);
   }
-  display->fill_screen(0x0);
+  display->fill_rect(x1, y1, w, h, 0x0);
   for(int i=0;i<50;i++)
   {
     display->set_draw_color(random(65535));
     display->draw_round_rectangle(
-      random(display->get_width()), 
-      random(display->get_height()),
-      random(display->get_width()),
-      random(display->get_height()),
-      random(10)
+      x1 + random(w), 
+      y1 + random(h),
+      x1 + random(w),
+      y1 + random(h),
+      random((w-h)/4)
     );
     vTaskDelay(100);
   }
-  display->fill_screen(0x0);
+  display->fill_rect(x1, y1, w, h, 0x0);
   for(int i=0;i<50;i++)
   {
     display->set_draw_color(random(65535));
     display->draw_triangle(
-      random(display->get_width()), 
-      random(display->get_height()),
-      random(display->get_width()),
-      random(display->get_height()), 
-      random(display->get_width()),
-      random(display->get_height())
+      x1 + random(w), 
+      y1 + random(h),
+      x1 + random(w), 
+      y1 + random(h), 
+      x1 + random(w), 
+      y1 + random(h)
     );
   }
-  display->fill_screen(0x0);
+  display->fill_rect(x1, y1, w, h, 0x0);
   for(int i=0;i<50;i++)
   {
+    uint16_t r = random(w/2);
     display->set_draw_color(random(65535));
     display->draw_circle(
-      random(display->get_width()), 
-      random(display->get_height()),
-      random(display->get_width())
+      x1 + r + random(w), 
+      y1 + r + random(h),
+      r
     );
   }
-  display->fill_screen(0x0);
+  display->fill_rect(x1, y1, w, h, 0x0);
   display->set_text_back_color(0x0);
   display->set_text_color(0xf800);
   display->set_text_size(6);
-  display->print_string("The End", 20, 200);
+  display->print_string("The End", x1+20,y1+100);
   vTaskDelay(1000);
 }
 
@@ -199,7 +206,6 @@ void setup()
   display->set_rotation(3);
   display->init();
   Logger.Info("... LCD Init done");
-  //test_display();
 }
 
 /**
@@ -210,5 +216,6 @@ void setup()
 void loop()
 {
   display->draw_background(lcars, lcars_size);
+  test_display(200, 140, 480, 320);
   vTaskDelay(5000);
 }
