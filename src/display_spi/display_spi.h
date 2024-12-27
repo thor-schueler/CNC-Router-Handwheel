@@ -30,6 +30,12 @@ class DISPLAY_SPI:public DISPLAY_GUI
 		 */
 		uint16_t RGB_to_565(uint8_t r, uint8_t g, uint8_t b);
 
+
+		/**
+		 * @brief draw backgound image on the display
+		 * @param image - array to image containing 3 6-bit color values per pixel
+		 * @param size - the number of elements in the image (should be wxhx3)
+		 */
 		void draw_background(const unsigned char* image, size_t size);
 
 		/**

@@ -21,7 +21,7 @@
 
 // local libraries
 #include "src/logging/SerialLogger.h"
-#include "src/display/display_spi.h"
+#include "src/display/display_wheel.h"
 
 #define TELEMETRY_FREQUENCY_MILLISECS 120000
 #define AP_ENABLE_PIN 5
@@ -59,7 +59,7 @@ SET_LOOP_TASK_STACK_SIZE(16384);
   //
 #endif
 
-DISPLAY_SPI *display = NULL;
+DISPLAY_Wheel *display = NULL;
 
 //void H_line(unsigned int x, unsigned int y, unsigned int l, unsigned int c)                   
 //{	
@@ -96,73 +96,6 @@ DISPLAY_SPI *display = NULL;
 //}
 
 
-void test_display(int x1, int y1, int x2, int y2)
-{
-  int w = x2-x1;
-  int h = y2-y1;
-
-  display->fill_rect(x1, y1, w, h, 0xf800);
-  vTaskDelay(500);
-  display->fill_rect(x1, y1, w, h, 0x07E0);
-  vTaskDelay(500);
-  display->fill_rect(x1, y1, w, h, 0x001F);
-  vTaskDelay(500);
-  display->fill_rect(x1, y1, w, h, 0x0);
-  for(int i=0;i<50;i++)
-  {
-    display->set_draw_color(random(65535));
-    display->draw_rectangle(
-      x1 + random(w), 
-      y1 + random(h),
-      x1 + random(w),
-      y1 + random(h)
-    );
-    vTaskDelay(100);
-  }
-  display->fill_rect(x1, y1, w, h, 0x0);
-  for(int i=0;i<50;i++)
-  {
-    display->set_draw_color(random(65535));
-    display->draw_round_rectangle(
-      x1 + random(w), 
-      y1 + random(h),
-      x1 + random(w),
-      y1 + random(h),
-      random((w-h)/4)
-    );
-    vTaskDelay(100);
-  }
-  display->fill_rect(x1, y1, w, h, 0x0);
-  for(int i=0;i<50;i++)
-  {
-    display->set_draw_color(random(65535));
-    display->draw_triangle(
-      x1 + random(w), 
-      y1 + random(h),
-      x1 + random(w), 
-      y1 + random(h), 
-      x1 + random(w), 
-      y1 + random(h)
-    );
-  }
-  display->fill_rect(x1, y1, w, h, 0x0);
-  for(int i=0;i<50;i++)
-  {
-    uint16_t r = random(w/2);
-    display->set_draw_color(random(65535));
-    display->draw_circle(
-      x1 + r + random(w), 
-      y1 + r + random(h),
-      r
-    );
-  }
-  display->fill_rect(x1, y1, w, h, 0x0);
-  display->set_text_back_color(0x0);
-  display->set_text_color(0xf800);
-  display->set_text_size(6);
-  display->print_string("The End", x1+20,y1+100);
-  vTaskDelay(1000);
-}
 
 /**
  * @brief Performs system setup activities, including connecting to WIFI, setting time, obtaining the IoTHub info 
@@ -202,7 +135,7 @@ void setup()
   }
   
   Logger.Info("... Startup\n");
-  display = new DISPLAY_SPI();
+  display = new DISPLAY_Wheel();
   display->set_rotation(3);
   display->init();
   Logger.Info("... LCD Init done");
@@ -215,7 +148,6 @@ void setup()
  */
 void loop()
 {
-  display->draw_background(lcars, lcars_size);
-  test_display(200, 140, 480, 320);
+  display->test();
   vTaskDelay(5000);
 }

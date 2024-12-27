@@ -20,6 +20,7 @@ POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "display_gui.h"
+#include "../logging/SerialLogger.h"
 
 #define swap(a, b) { int16_t t = a; a = b; b = t; }
 

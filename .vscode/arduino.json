@@ -5,7 +5,7 @@
     "output": ".\\build",
     "sketch": "CNC Router Handwheel - Firmware.ino",
     "programmer": "esptool",
-    "prebuild": "@if exist .build (rd /s /q .build)",
+    "__prebuild": "@if exist .build (rd /s /q .build)",
     "buildPreferences": [
         [
             "compiler.cpp.extra_flags",

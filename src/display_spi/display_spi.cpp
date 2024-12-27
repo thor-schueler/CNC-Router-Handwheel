@@ -37,7 +37,7 @@ DISPLAY_SPI::DISPLAY_SPI()
 
 	spi = new SPIClass(HSPI);
   	spi->begin();
-	spi->setFrequency(60000000);
+	spi->setFrequency(27000000);
   	spi->setBitOrder(MSBFIRST);
 	spi->setDataMode(SPI_MODE0);
 
@@ -47,6 +47,7 @@ DISPLAY_SPI::DISPLAY_SPI()
 	width = WIDTH;
 	height = HEIGHT;
 	setWriteDir();
+	CS_IDLE;
 }
 
 #pragma region public methods
@@ -62,6 +63,11 @@ uint16_t DISPLAY_SPI::RGB_to_565(uint8_t r, uint8_t g, uint8_t b)
 	return ((r& 0xF8) << 8) | ((g & 0xFC) << 3) | ((b & 0xF8) >> 3);
 }
 
+/**
+ * @brief draw backgound image on the display
+ * @param image - array to image containing 3 6-bit color values per pixel
+ * @param size - the number of elements in the image (should be wxhx3)
+ */
 void DISPLAY_SPI::draw_background(const unsigned char* image, size_t size)
 {
 	set_addr_window(0, 0, width - 1, height);
@@ -71,7 +77,6 @@ void DISPLAY_SPI::draw_background(const unsigned char* image, size_t size)
 	spi->transferBytes(image, nullptr, size);
 	CS_IDLE;
 }
-
 
 /**
  * @brief Draws a bitmap on the display

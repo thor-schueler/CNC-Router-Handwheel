@@ -32,8 +32,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #define CENTER 9998
 
 extern const unsigned char lcd_font[] PROGMEM;
-extern const unsigned char lcars[] PROGMEM;
-extern const size_t lcars_size;
 
 class DISPLAY_GUI
 {
@@ -51,7 +49,11 @@ class DISPLAY_GUI
 		/// @return integer with the 565 representation of the color. 
 		virtual uint16_t RGB_to_565(uint8_t r, uint8_t g, uint8_t b)=0;
 
-
+		/**
+		 * @brief draw backgound image on the display
+		 * @param image - array to image containing 3 6-bit color values per pixel
+		 * @param size - the number of elements in the image (should be wxhx3)
+		 */
 		virtual void draw_background(const unsigned char* image, size_t size)=0;
 
 		/**
