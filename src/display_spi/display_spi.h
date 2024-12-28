@@ -9,6 +9,15 @@
 #include "mcu_spi_magic.h"
 #include "../display_gui/display_gui.h"
 
+/** 
+ * This program implements the SPI display for the wheel.
+ * if you don't need to control the LED pin,you can set it to 3.3V and set the pin definition to -1.
+ * other pins can be defined by youself,for example
+ * pin usage as follow:
+ *                   CS  DC/RS  RESET  SDI/MOSI  MISO 	SCK   LED    VCC     GND    
+ * ESP32             15   25     26       13     12		14    3.3V   3.3V    GND
+ */
+
 /**
  * @brief Implements the communication with the SPI controller
  */
@@ -29,7 +38,6 @@ class DISPLAY_SPI:public DISPLAY_GUI
 		 * @returns 16-bit packed color value
 		 */
 		uint16_t RGB_to_565(uint8_t r, uint8_t g, uint8_t b);
-
 
 		/**
 		 * @brief draw backgound image on the display
@@ -141,26 +149,34 @@ class DISPLAY_SPI:public DISPLAY_GUI
 
 		/**
 		 * @brief Scrolls the display vertically
-		 * @param top
-		 * @param scrollines
-		 * @param offset
+		 * @param scroll_area_top - the top of the scroll 
+		 * @param scroll_area_height - the height of the scroll area
+		 * @param offset - scroll distance
 		 */
-    	void vert_scroll(int16_t top, int16_t scrollines, int16_t offset);
+		void vert_scroll(int16_t scroll_area_top, int16_t scroll_area_height, int16_t offset);
 
 	protected:
-		uint8_t xoffset,yoffset;
-    	uint16_t rotation;
-
 		/**
-		 * @brief Read graphics RAM data
+		 * @brief Read graphics RAM data as 565 values
 		 * @param x - x Coordinate to start reading from
 		 * @param y - y Coordinate to start reading from
 		 * @param block - Pointer to word array to write the data
 		 * @param w - Width of the area to read
 		 * @param h - height of the area to read
-		 * @returns The number of words read
+		 * @returns The number of values read
 		 */
-		int16_t read_GRAM(int16_t x, int16_t y, uint16_t *block, int16_t w, int16_t h);
+		uint32_t read_GRAM(int16_t x, int16_t y, uint16_t *block, int16_t w, int16_t h);
+
+		/**
+		 * @brief Read graphics RAM data as RGB byte values
+		 * @param x - x Coordinate to start reading from
+		 * @param y - y Coordinate to start reading from
+		 * @param block - Pointer to word array to write the data
+		 * @param w - Width of the area to read
+		 * @param h - height of the area to read
+		 * @returns The number of bytes read
+		 */
+		uint32_t read_GRAM_RGB(int16_t x, int16_t y, uint8_t *block, int16_t w, int16_t h);
 
 		/**
 		 * @brief Read the value from LCD register
@@ -189,22 +205,6 @@ class DISPLAY_SPI:public DISPLAY_GUI
 		 */
 		void write_display_buffer();
 
-	private:
-		/**
-		 * @brief Pushes initialization data and commands to the display controller
-		 * @details This method uses byte data. The first byte is a command, the second the number of parameters, followed by all the parameters, then next command etc.....
-		 * @param table - Pointer to table of byte data
-		 * @param size - The number of bytes in the table 
-		 */
-		void init_table8(const void *table, int16_t size);
-		
-		/**
-		 * @brief Pushes initialization data and commands to the display controller
-		 * @details This method uses word data. The first word is a command, the second the number of parameters, followed by all the parameters, then next command etc.....
-		 * @param table - Pointer to table of word data
-		 * @param size - The number of words in the table 
-		 */	
-		void init_table16(const void *table, int16_t size);
 
 		/**
 		 * @brief Writes command and data block to the display controller
@@ -245,6 +245,24 @@ class DISPLAY_SPI:public DISPLAY_GUI
 		 */
 		void write_cmd_data(uint16_t cmd, uint16_t data);
 
+		/**
+		 * @brief Pushes initialization data and commands to the display controller
+		 * @details This method uses byte data. The first byte is a command, the second the number of parameters, followed by all the parameters, then next command etc.....
+		 * @param table - Pointer to table of byte data
+		 * @param size - The number of bytes in the table 
+		 */
+		void init_table8(const void *table, int16_t size);
+		
+		/**
+		 * @brief Pushes initialization data and commands to the display controller
+		 * @details This method uses word data. The first word is a command, the second the number of parameters, followed by all the parameters, then next command etc.....
+		 * @param table - Pointer to table of word data
+		 * @param size - The number of words in the table 
+		 */	
+		void init_table16(const void *table, int16_t size);
+
+		uint8_t xoffset,yoffset;
+    	uint16_t rotation;
 		unsigned int width = WIDTH;
 		unsigned int height = HEIGHT;
 		uint16_t XC,YC,CC,RC,SC1,SC2,MD,VL,R24BIT;

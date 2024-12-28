@@ -184,11 +184,14 @@ void DISPLAY_SPI::fill_rect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t
 	if(true)
 	{
 		buffer = new uint8_t[(size_t)(h*3)];
+		uint8_t r = (uint8_t)((((color >> 11) & 0x1F) * 63)/31);
+		uint8_t g = (uint8_t)((color >> 5) & 0x3F);
+		uint8_t b = (uint8_t)(((color & 0x1F) * 63) / 31);
 		for(i=0; i<h*3; i+=3) 
 		{
-			buffer[i]  = (uint8_t)((color >> 8) & 0xF8);
-			buffer[i+1]= (uint8_t)((color >> 3) & 0xFC);
-			buffer[i+2]= (uint8_t)(color << 3);
+			buffer[i] = r << 2;
+			buffer[i+1] = g << 2;
+			buffer[i+2] = b << 2;
 		}
 		set_addr_window(x, y, x + w - 1, y + h);
 			// reducing w by one when setting the address window is important. 
@@ -420,38 +423,37 @@ void DISPLAY_SPI::toggle_backlight(boolean state)
 
 /**
  * @brief Scrolls the display vertically
- * @param top - the top of the scroll 
- * @param scrollines - the number of the lines to scroll
- * @param offset - offset from the top
+ * @param scroll_area_top - the top of the scroll 
+ * @param scroll_area_height - the height of the scroll area
+ * @param offset - scroll distance
  */
-void DISPLAY_SPI::vert_scroll(int16_t top, int16_t scrollines, int16_t offset)
+void DISPLAY_SPI::vert_scroll(int16_t scroll_area_top, int16_t scroll_area_height, int16_t offset)
 {
     int16_t bfa;
     int16_t vsp;
-    int16_t sea = top;
-	bfa = HEIGHT - top - scrollines; 
-    if (offset <= -scrollines || offset >= scrollines)
+	bfa = HEIGHT - scroll_area_top - scroll_area_height; 
+    if (offset <= -scroll_area_height || offset >= scroll_area_height)
     {
 		offset = 0; //valid scroll
     }
-	vsp = top + offset; // vertical start position
+	vsp = scroll_area_top + offset; // vertical start position
     if (offset < 0)
     {
-        vsp += scrollines;          //keep in unsigned range
+        vsp += scroll_area_height;  //keep in unsigned range
     }
-    sea = top + scrollines - 1;
-
-  	uint8_t d[6];           // for multi-byte parameters
-  	d[0] = top >> 8;        //TFA
-  	d[1] = top;
-  	d[2] = scrollines >> 8; //VSA
-  	d[3] = scrollines;
-  	d[4] = bfa >> 8;        //BFA
+  	uint8_t d[6];           		// for multi-byte parameters
+  	d[0] = scroll_area_top >> 8;    // TFA (top fixed area)
+  	d[1] = scroll_area_top;
+  	d[2] = scroll_area_height >> 8; // VSA (scroll area)
+  	d[3] = scroll_area_height;
+  	d[4] = bfa >> 8;        		// BFA (bottom fixes area)
   	d[5] = bfa;
-	push_command(SC1, d, 6);
-	d[0] = vsp >> 8;        //VSP
-  	d[1] = vsp;
-	push_command(SC2, d, 2);
+	push_command(SC1, d, 6);		// Send the command setting the scroll window
+
+	d[0] = vsp >> 8;        		// Set the scroll start address at the top of the scroll area
+  	d[1] = vsp;						// Ending line parameter for the scroll
+	push_command(SC2, d, 2);		// Vertical Scroll Start Address command
+
 	if (offset == 0) 
 	{
 		push_command(0x13, NULL, 0);
@@ -470,11 +472,11 @@ void DISPLAY_SPI::vert_scroll(int16_t top, int16_t scrollines, int16_t offset)
  * @param h - height of the area to read
  * @returns The number of words read
  */
-int16_t DISPLAY_SPI::read_GRAM(int16_t x, int16_t y, uint16_t *block, int16_t w, int16_t h)
+uint32_t DISPLAY_SPI::read_GRAM(int16_t x, int16_t y, uint16_t *block, int16_t w, int16_t h)
 {
 	uint16_t ret, dummy;
-    int16_t n = w * h;
-	int16_t cnt = 0;
+    uint32_t n = w * h;
+	uint32_t cnt = 0;
     uint8_t r, g, b, tmp;
     set_addr_window(x, y, x + w - 1, y + h - 1);
     while (n > 0) 
@@ -504,6 +506,53 @@ int16_t DISPLAY_SPI::read_GRAM(int16_t x, int16_t y, uint16_t *block, int16_t w,
         CS_IDLE;
         setWriteDir();
     }
+	return cnt;
+}
+
+/**
+ * @brief Read graphics RAM data as 565 values
+ * @param x - x Coordinate to start reading from
+ * @param y - y Coordinate to start reading from
+ * @param block - Pointer to word array to write the data
+ * @param w - Width of the area to read
+ * @param h - height of the area to read
+ * @returns The number of values read
+ */
+uint32_t DISPLAY_SPI::read_GRAM_RGB(int16_t x, int16_t y, uint8_t *block, int16_t w, int16_t h)
+{
+	uint32_t ret;
+    uint32_t n = (uint32_t)w * (uint32_t)h * 3;
+	uint32_t cnt = 0;
+    uint8_t r;
+
+    set_addr_window(x, y, x+w-1, y+h-1);
+	CS_ACTIVE;
+	writeCmd16(0x2E);
+    setReadDir();
+
+	r=spi->transfer(0x00);  // first byte just contains some status info... discard...
+    if(R24BIT == 1)
+	{
+		for (uint32_t i = 0; i < n; i++) 
+		{ 
+			block[i] = (spi->transfer(0x00) & 0x7F) << 1;
+			cnt++;
+		}
+	}
+	else
+	{
+		for (uint32_t i = 0; i < n; i+=3) 
+		{ 
+			block[i] = (uint8_t)((((ret >> 11) & 0x1F) * 63)/31);
+			block[i+1] = (uint8_t)((ret >> 5) & 0x3F);
+			block[i+2] = (uint8_t)(((ret & 0x1F) * 63) / 31);
+				// this is likely incorrect and needs to be empircally reviewed
+				// to make sure that there is no internal mucking up the colors ;)
+			cnt+=3;
+		}
+	}
+    CS_IDLE;
+    setWriteDir();
 	return cnt;
 }
 
@@ -653,6 +702,7 @@ void DISPLAY_SPI::start_display()
 		0xE1, 15, 0x00, 0x17, 0x1A, 0x04, 0x0E, 0x06, 0x2F, 0x45, 0x43, 0x02, 0x0A, 0x09, 0x32, 0x36, 0x0F,
 											// Send NGAMCTRL(Negative Gamma Control) command 
 											// Parameters 1 - 15 - Set the gray scale voltage to adjust the gamma characteristics of the TFT panel.
+		0x51, 1, 0xff,						// Send brightness command to fill brightness
 		0x11, 0,							// Send Sleep OUT command 	
 		0x29, 0								// Send Display On command
 	};

@@ -14,11 +14,137 @@
  */
 DISPLAY_Wheel::DISPLAY_Wheel()
 {
-    draw_background(lcars, lcars_size);
     w_area_x1 = 200;
     w_area_y1 = 140;
     w_area_x2 = 480;
     w_area_y2 = 320;
+    w_area_cursor_x = w_area_x1;
+    w_area_cursor_y = w_area_y1;
+}
+
+/**
+ * @brief Initializes the display
+ */
+void DISPLAY_Wheel::init()
+{
+    DISPLAY_SPI::init();
+    draw_background(lcars, lcars_size);
+}
+
+/**
+ * @brief Print a string in the working area. Advances the cursor to keep track of position
+ * @param s - String to print
+ */
+void DISPLAY_Wheel::w_area_print(String s, bool newline)
+{
+    set_text_color(0xffff);
+    set_text_back_color(0x0);
+    set_text_size(1);
+    while(w_area_cursor_y > w_area_y2 - text_size*8)
+    {
+        // scroll display area to make space
+        // set partial display window to work area
+        set_addr_window(w_area_x1, w_area_y1, w_area_x2, w_area_y2);
+        vert_scroll(140, 180, 180-text_size*8);
+        w_area_cursor_y = w_area_cursor_y - text_size*8;
+    }
+    print_string(s, w_area_cursor_x, w_area_cursor_y);
+    w_area_cursor_x = get_text_X_cursor();
+    w_area_cursor_y = get_text_Y_cursor();
+    if(newline)
+    {
+        print_string("\n", w_area_cursor_x, w_area_cursor_y);
+        w_area_cursor_x = w_area_x1;
+        w_area_cursor_y = get_text_Y_cursor();
+    }
+
+}
+
+void DISPLAY_Wheel::windowScroll(int16_t x, int16_t y, int16_t w, int16_t h, int16_t dx, int16_t dy, uint8_t *bufh, uint8_t *bufl)
+{
+    uint32_t cnth = 0;
+    uint32_t cntl = 0;
+    if (dx) 
+        if(true)
+        {
+            // even though the ILI9488 does support vertical scrolling (horizontal in landscape) via hardware
+            // it only scrolls the entire screen height. So we still need to implement software scrolling...
+            // first we read the data....
+            cnth = read_GRAM_RGB(x, y, bufh, w, h);
+            // to scroll by 1 pixel to the right, we need to process each row in the read buffer
+            // and move the pixel bytes over by one and then blank our the first pixel....
+            // to affect the scrolling distance dx, we need to iterate until we reach dx...
+            for(uint16_t i=1; i<=dx; i++)
+            {
+              for(uint16_t row=0; row<h; row++)
+              {
+                uint8_t *rowStart = &bufh[row*w*3];                              // position the pointer at the start of the row.
+                memmove(rowStart + i*3, rowStart + (i - 1) * 3, (w - i) * 3);   // move the bytes over appropriately
+                rowStart[(i-1)*3] = 0x0;                                        // Red component 
+                rowStart[(i-1)*3 + 1] = 0x0;                                    // Green component 
+                rowStart[(i-1)*3 + 2] = 0x0;                                    // Blue component }
+                                                                                // Set the first pixel to black (0x0, 0x0, 0x0)
+              }
+              set_addr_window(x, y, x+w-1, y+h-1);                              // Set the scroll region data window
+              CS_ACTIVE;
+              writeCmd8(CC);
+              CD_DATA;
+              spi->transferBytes(bufh, nullptr, cnth);                            // transfer the updated buffer into the window.
+              CS_IDLE;
+            }
+        }
+        else
+        {
+            // in portrait mode we have to use software scrolling to move in the x direction
+            // first we read the data....
+            cnth = read_GRAM_RGB(x, y, bufh, w, h);
+            for(uint16_t i=1; i<= dx; i++)
+            {
+              for(uint16_t row=0; row<h; ++row) 
+              { 
+                uint8_t *rowStart = &bufh[row*w*3];  
+                memmove(rowStart + i*3, rowStart + (i-1) * 3 , (w - i) * 3); // Shift each row to the left by one pixel (3 components)
+
+                rowStart[(i-1)*3] = 0x0; // Red component 
+                rowStart[(i-1)*3 + 1] = 0x0; // Green component 
+                rowStart[(i-1)*3 + 2] = 0x0; // Blue component }
+                  // Set the first pixel to black (0x0, 0x0, 0x0) 
+              }
+              set_addr_window(x, y, x+w-1, y+h-1);
+              CS_ACTIVE;
+              writeCmd8(CC);
+              CD_DATA;
+              spi->transferBytes(bufh, nullptr, cnth);
+              CS_IDLE;
+            }
+        }
+    if (dy) 
+        if(rotation == 1 || rotation == 3)
+        {
+            // if we scroll vertically and rotation is landscape, we need to scroll in software
+            // first we read the data....
+            cnth = read_GRAM_RGB(x, y, bufh, w, h);
+            for(uint16_t i=1; i<= dy; i++)
+            {
+              set_addr_window(x, y, x + w-1, y+h-1);
+              CS_ACTIVE;
+              writeCmd8(CC);
+              CD_DATA;
+              spi->transferBytes(bufh + i*3*w, nullptr, cnth-3*i*w);
+              for(int m=3*(i-1)*w; m<3*i*w; m++) bufh[m] = 0x0;
+              spi->transferBytes(bufh, nullptr, 3*i*w);
+                    // each dy means we have to move the start over by 3* the with of the area
+                    // conversely, the size to transfer reduces by dy*3*width
+                    // but now the last row needs to be blanked....
+              CS_IDLE;
+            }
+        }
+        else
+        {
+          // in portrait mode we can use hardware scroll to move in hte y direction
+
+            
+        }
 }
 
 /**
@@ -27,6 +153,50 @@ DISPLAY_Wheel::DISPLAY_Wheel()
  */
 void DISPLAY_Wheel::test()
 {
+    draw_background(lcars, lcars_size);
+
+    // Define the scroll window in the rotated coordinate system 
+    uint16_t startX = 50; // X start in rotated view 
+    uint16_t startY = 75; // Y start in rotated view 
+    uint16_t width = 280; // Width of the scrolling area in rotated view 
+    uint16_t height = 180;
+
+    //uint16_t scrollbuf[480];                  //my biggest shield is 320x480
+
+
+    //Logger.Info("... setting address window");
+
+    //set_addr_window(startX, startY, startX + width - 1, startY + height - 1);
+
+    //Logger.Info("... setup scroll");
+
+    // Total display width (in rotated view) 
+    //uint16_t topFixedArea = startY; 
+    //uint16_t scrollArea = height; 
+    //uint16_t bottomFixedArea = 480 - topFixedArea - scrollArea;
+
+    //CS_ACTIVE;
+    //writeCmd8(0x33);
+    //writeData16(0);
+    //writeData16(scrollArea);
+    //writeData16(320 - scrollArea);
+
+    //writeCmd8(0x37);
+    //writeData16(0);
+
+    //Logger.Info("... scrolling");
+
+    //for(int scroll=0; scroll < height; scroll++){
+    //    writeCmd8(0x37);
+    //    writeData16(scroll);
+    //    vTaskDelay(50);
+    //}
+    //Logger.Info("... reset display");
+    //writeCmd8(0x13);
+    //Logger.Info("...Done");
+    //CS_IDLE;
+    return;  
+
   int w = w_area_x2 - w_area_x1;
   int h = w_area_y2 - w_area_y1;
 
@@ -121,7 +291,6 @@ void DISPLAY_Wheel::test()
  */
 void DISPLAY_Wheel::write_axis(Axis axis)
 {
-    //fill_rect(80, 150, 105, 40, RGB_to_565(44,0,63));
     set_text_back_color(RGB_to_565(44,0,63));
     set_text_color(0xffff);
     set_text_size(4);

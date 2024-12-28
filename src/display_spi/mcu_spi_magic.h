@@ -14,6 +14,12 @@
 #define WR_ACTIVE   0
 #define WR_IDLE     0
 
+/** 
+ * Pin usage as follow:
+ *                   CS  DC/RS  RESET  SDI/MOSI  SCK   LED    VCC     GND    
+ * ESP32             15   25     26       13     14    3.3V   3.3V    GND
+ */
+
 #define LED   -1            
 #define RS    25       
 #define RESET 26

@@ -404,7 +404,7 @@ class DISPLAY_GUI
 		 * @param h - height of the area to read
 		 * @returns The number of words read
 		 */		
-		virtual int16_t read_GRAM(int16_t x, int16_t y, uint16_t *block, int16_t w, int16_t h)=0;
+		virtual uint32_t read_GRAM(int16_t x, int16_t y, uint16_t *block, int16_t w, int16_t h)=0;
 		#pragma endregion
 
 		#pragma region protected methods

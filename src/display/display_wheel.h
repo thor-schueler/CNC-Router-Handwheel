@@ -31,6 +31,20 @@ class DISPLAY_Wheel:public DISPLAY_SPI
 		DISPLAY_Wheel();
 
 		/**
+		 * @brief Initializes the display
+		 */
+		void init();
+
+		void windowScroll(int16_t x, int16_t y, int16_t wid, int16_t ht, int16_t dx, int16_t dy, uint8_t *bufh, uint8_t *bufl);
+
+		/**
+		 * @brief Print a string in the working area. Advances the cursor to keep track of position
+		 * @param s - String to print
+		 * @param newline - True to add a carriage return
+		 */
+		void w_area_print(String s, bool newline);
+
+		/**
 		 * @brief Tests the display by going through a routine of drawing various
 		 * shapes and information
 		 */
@@ -71,6 +85,8 @@ class DISPLAY_Wheel:public DISPLAY_SPI
 		uint16_t w_area_y1;
 		uint16_t w_area_x2;
 		uint16_t w_area_y2;
+		uint16_t w_area_cursor_x;
+		uint16_t w_area_cursor_y;
 };
 
 #endif

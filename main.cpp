@@ -22,25 +22,10 @@
 // local libraries
 #include "src/logging/SerialLogger.h"
 #include "src/display/display_wheel.h"
+#include "src/wheel/wheel.h"
 
 #define TELEMETRY_FREQUENCY_MILLISECS 120000
 #define AP_ENABLE_PIN 5
-
-/* 
- * This program is a demo of clearing screen to display black, white, red, green, blue.
- * when using the BREAKOUT BOARD only and using these hardware spi lines to the LCD,
- * the SDA pin and SCK pin is defined by the system and can't be modified.
- * if you don't need to control the LED pin,you can set it to 3.3V and set the pin definition to -1.
- * other pins can be defined by youself,for example
- * pin usage as follow:
- *                   CS  DC/RS  RESET  SDI/MOSI  SCK   LED    VCC     GND    
- * ESP32             15   25     26       13     14    3.3V   3.3V    GND
-*/
-
-#define LED   -1            
-#define RS    25       
-#define RESET 26
-
 
 //static Config config;
 //static Conveyor *conveyor = NULL;
@@ -59,43 +44,12 @@ SET_LOOP_TASK_STACK_SIZE(16384);
   //
 #endif
 
-DISPLAY_Wheel *display = NULL;
-
-//void H_line(unsigned int x, unsigned int y, unsigned int l, unsigned int c)                   
-//{	
-//  unsigned int i,j;
-//  digitalWrite(hspi->pinSS(), LOW);
-//  Lcd_Write_Com(0x02c); //write_memory_start
-//  l=l+x;
-//  Address_set(x,y,l,y);
-//  j=l*2;
-//  for(i=1;i<=j;i++)
-//  {
-//    Lcd_Write_Data((c>>8)&0xF8);
-//    Lcd_Write_Data((c>>3)&0xFC);
-//    Lcd_Write_Data(c<<3);
-//  }
-//  digitalWrite(hspi->pinSS(),HIGH);   
-//}
-
-//void V_line(unsigned int x, unsigned int y, unsigned int l, unsigned int c)                   
-//{	
-//  unsigned int i,j;
-//  digitalWrite(hspi->pinSS(),LOW);
-//  Lcd_Write_Com(0x02c); //write_memory_start
-//  l=l+y;
-//  Address_set(x,y,x,l);
-//  j=l*2;
-//  for(i=1;i<=j;i++)
-//  { 
-//    Lcd_Write_Data((c>>8)&0xF8);
-//    Lcd_Write_Data((c>>3)&0xFC);
-//    Lcd_Write_Data(c<<3);
-//  }
-//  digitalWrite(hspi->pinSS(),HIGH);   
-//}
-
-
+Wheel *wheel = NULL;
+DISPLAY_Wheel *dw = NULL;
+uint8_t* buf1 = nullptr;
+uint8_t* buf2 = nullptr;
+//uint8_t buf1[280*90*3];
+//uint8_t buf2[280*90*3];
 
 /**
  * @brief Performs system setup activities, including connecting to WIFI, setting time, obtaining the IoTHub info 
@@ -134,11 +88,38 @@ void setup()
     //}
   }
   
-  Logger.Info("... Startup\n");
-  display = new DISPLAY_Wheel();
-  display->set_rotation(3);
-  display->init();
-  Logger.Info("... LCD Init done");
+  uint32_t size = 280*90*3*sizeof(uint8_t);
+  //Serial.println(size, DEC);
+  Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap()); 
+  Logger.Info_f(F("Largest free block: %d"), heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
+  //buf1 = (uint8_t *)malloc(size);
+  buf1 = (uint8_t *)heap_caps_malloc(size, MALLOC_CAP_8BIT);
+  if(buf1 == nullptr) Serial.println(F("allocation buf1 did not succeed"));
+  Logger.Info_f(F("Largest free block: %d"), heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
+ 
+  buf2 = (uint8_t *)heap_caps_malloc(size, MALLOC_CAP_8BIT);
+  if(buf2 == nullptr) Serial.println(F("allocation buf2 did not succeed"));
+
+  pinMode(16, INPUT_PULLUP);
+  pinMode(17, INPUT_PULLUP);
+  pinMode(18, INPUT_PULLUP);
+  pinMode(33, OUTPUT);
+  digitalWrite(33, HIGH);
+
+  Logger.Info(F("... Startup"));
+  //wheel = new Wheel();
+  dw = new DISPLAY_Wheel();
+  dw->set_rotation(3);
+  dw->init();
+
+  for(int i=0; i< 280*90*3; i++)
+  {
+    buf1[i] = 0x0;
+    buf2[i] = 0x0;
+  }
+
+  Logger.Info(F("... Init done"));
+  Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap()); 
 }
 
 /**
@@ -148,6 +129,18 @@ void setup()
  */
 void loop()
 {
-  display->test();
-  vTaskDelay(5000);
+  Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap());
+  Logger.Info_f(F("Largest free block: %d"), heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
+ 
+  dw->draw_background(lcars, lcars_size);
+  //dw->fill_screen(0xf800);
+  //wheel->process_input_change();
+  vTaskDelay(1000);
+
+  //for(int i=0; i<100; i++)
+  //{
+  dw->windowScroll(60, 60, 280, 90, 140, 45, buf1, buf2);
+ // }
+  //free(buf);
+  vTaskDelay(3000);
 }
