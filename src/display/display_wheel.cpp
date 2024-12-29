@@ -60,36 +60,48 @@ void DISPLAY_Wheel::w_area_print(String s, bool newline)
 
 }
 
-void DISPLAY_Wheel::windowScroll(int16_t x, int16_t y, int16_t w, int16_t h, int16_t dx, int16_t dy, uint8_t *bufh, uint8_t *bufl)
+void DISPLAY_Wheel::windowScroll(int16_t x, int16_t y, int16_t w, int16_t h, int16_t dx, int16_t dy, uint8_t *bufh, uint8_t *bufl, uint8_t inc)
 {
     uint32_t cnth = 0;
     uint32_t cntl = 0;
+    uint16_t bh = h/2;
     if (dx) 
         if(true)
         {
             // even though the ILI9488 does support vertical scrolling (horizontal in landscape) via hardware
             // it only scrolls the entire screen height. So we still need to implement software scrolling...
             // first we read the data....
-            cnth = read_GRAM_RGB(x, y, bufh, w, h);
+            cnth = read_GRAM_RGB(x, y, bufh, w, bh);
+            cntl = read_GRAM_RGB(x, y + bh, bufl, w, bh);
             // to scroll by 1 pixel to the right, we need to process each row in the read buffer
             // and move the pixel bytes over by one and then blank our the first pixel....
             // to affect the scrolling distance dx, we need to iterate until we reach dx...
-            for(uint16_t i=1; i<=dx; i++)
+            for(uint16_t i=1; i<=dx; i+=inc)
             {
-              for(uint16_t row=0; row<h; row++)
+              for(uint16_t row=0; row<bh; row++)
               {
-                uint8_t *rowStart = &bufh[row*w*3];                              // position the pointer at the start of the row.
-                memmove(rowStart + i*3, rowStart + (i - 1) * 3, (w - i) * 3);   // move the bytes over appropriately
-                rowStart[(i-1)*3] = 0x0;                                        // Red component 
-                rowStart[(i-1)*3 + 1] = 0x0;                                    // Green component 
-                rowStart[(i-1)*3 + 2] = 0x0;                                    // Blue component }
+                uint8_t *rowStarth = &bufh[row*w*3];
+                uint8_t *rowStartl = &bufl[row*w*3];                            // position the pointer at the start of the row.
+                memmove(rowStarth + (i+inc-1)*3, rowStarth + (i-1)*3, (w - (i+inc-1)) * 3); 
+                memmove(rowStartl + (i+inc-1)*3, rowStartl + (i-1)*3, (w - (i+inc-1)) * 3); 
+                                                                                // move the bytes over appropriately
+                for(uint8_t k=1; k<=inc; k++)
+                {                                                                 
+                  rowStarth[((i-1)+(k-1))*3]     = 0x0;               // Red component 
+                  rowStarth[((i-1)+(k-1))*3 + 1] = 0x0;               // Green component 
+                  rowStarth[((i-1)+(k-1))*3 + 2] = 0x0;               // Blue component 
+                  rowStartl[((i-1)+(k-1))*3]     = 0x0;               // Red component 
+                  rowStartl[((i-1)+(k-1))*3 + 1] = 0x0;               // Green component 
+                  rowStartl[((i-1)+(k-1))*3 + 2] = 0x0;               // Blue component 
                                                                                 // Set the first pixel to black (0x0, 0x0, 0x0)
+                }
               }
               set_addr_window(x, y, x+w-1, y+h-1);                              // Set the scroll region data window
               CS_ACTIVE;
               writeCmd8(CC);
               CD_DATA;
               spi->transferBytes(bufh, nullptr, cnth);                            // transfer the updated buffer into the window.
+              spi->transferBytes(bufl, nullptr, cntl);
               CS_IDLE;
             }
         }
@@ -119,25 +131,39 @@ void DISPLAY_Wheel::windowScroll(int16_t x, int16_t y, int16_t w, int16_t h, int
             }
         }
     if (dy) 
-        if(rotation == 1 || rotation == 3)
+        if(rotation == 1 || rotation == 3 || true)
         {
             // if we scroll vertically and rotation is landscape, we need to scroll in software
             // first we read the data....
-            cnth = read_GRAM_RGB(x, y, bufh, w, h);
-            for(uint16_t i=1; i<= dy; i++)
+            cnth = read_GRAM_RGB(x, y, bufh, w, bh);
+            cntl = read_GRAM_RGB(x, y + bh, bufl, w, bh);
+            set_addr_window(x, y, x + w-1, y+h-1);
+            CS_ACTIVE;
+            writeCmd8(CC);
+            CD_DATA;
+
+            for(uint16_t i=1; i<=dy; i++)
             {
-              set_addr_window(x, y, x + w-1, y+h-1);
-              CS_ACTIVE;
-              writeCmd8(CC);
-              CD_DATA;
-              spi->transferBytes(bufh + i*3*w, nullptr, cnth-3*i*w);
-              for(int m=3*(i-1)*w; m<3*i*w; m++) bufh[m] = 0x0;
-              spi->transferBytes(bufh, nullptr, 3*i*w);
-                    // each dy means we have to move the start over by 3* the with of the area
-                    // conversely, the size to transfer reduces by dy*3*width
-                    // but now the last row needs to be blanked....
-              CS_IDLE;
+              if(i<=bh)
+              {
+                spi->transferBytes(bufh + i*3*w, nullptr, cnth-3*i*w);
+                spi->transferBytes(bufl, nullptr, cntl);
+                memset(bufh + 3*(i-1)*w, 0x0, w*3);
+                spi->transferBytes(bufh, nullptr, 3*i*w);
+                      // each dy means we have to move the start over by 3* the with of the area
+                      // conversely, the size to transfer reduces by dy*3*width
+                      // but now the last row needs to be blanked....
+              }
+              else
+              {
+                // now bufh has been fully processes and we need to shif processing to bufl
+                spi->transferBytes(bufl + (i-bh)*3*w, nullptr, cntl-3*(i-bh)*w);
+                spi->transferBytes(bufh, nullptr, cnth);
+                memset(bufl + 3*(i-bh-1)*w, 0x0, w*3);
+                spi->transferBytes(bufl, nullptr, 3*(i-bh)*w);
+              }
             }
+            CS_IDLE;
         }
         else
         {

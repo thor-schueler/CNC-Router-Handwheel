@@ -139,7 +139,7 @@ void loop()
 
   //for(int i=0; i<100; i++)
   //{
-  dw->windowScroll(60, 60, 280, 90, 140, 45, buf1, buf2);
+  dw->windowScroll(60, 60, 280, 180, 0, 180, buf1, buf2, 5);
  // }
   //free(buf);
   vTaskDelay(3000);

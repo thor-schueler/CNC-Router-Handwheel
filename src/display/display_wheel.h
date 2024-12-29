@@ -35,7 +35,7 @@ class DISPLAY_Wheel:public DISPLAY_SPI
 		 */
 		void init();
 
-		void windowScroll(int16_t x, int16_t y, int16_t wid, int16_t ht, int16_t dx, int16_t dy, uint8_t *bufh, uint8_t *bufl);
+		void windowScroll(int16_t x, int16_t y, int16_t wid, int16_t ht, int16_t dx, int16_t dy, uint8_t *bufh, uint8_t *bufl, uint8_t increment=1);
 
 		/**
 		 * @brief Print a string in the working area. Advances the cursor to keep track of position
