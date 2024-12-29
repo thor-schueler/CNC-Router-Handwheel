@@ -205,7 +205,6 @@ class DISPLAY_SPI:public DISPLAY_GUI
 		 */
 		void write_display_buffer();
 
-
 		/**
 		 * @brief Writes command and data block to the display controller
 		 * @param cmd - The command to write

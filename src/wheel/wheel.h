@@ -28,14 +28,15 @@ class Wheel
          */
         Wheel();
         void process_input_change();
-
+        
+        DISPLAY_Wheel *display = nullptr;
     protected:
         static void on_PCF8575_input_changed();
 
     private: 
         static bool key_changed;
         PCF8575 *pcf8575 = nullptr;
-        DISPLAY_Wheel *display = nullptr;
+        
         float x = 0.0;
         float y = 0.0;
         float z = 0.0;

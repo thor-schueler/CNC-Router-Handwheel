@@ -46,8 +46,7 @@ SET_LOOP_TASK_STACK_SIZE(16384);
 
 Wheel *wheel = NULL;
 DISPLAY_Wheel *dw = NULL;
-uint8_t* buf1 = nullptr;
-uint8_t* buf2 = nullptr;
+
 //uint8_t buf1[280*90*3];
 //uint8_t buf2[280*90*3];
 
@@ -88,17 +87,12 @@ void setup()
     //}
   }
   
-  uint32_t size = 280*90*3*sizeof(uint8_t);
+  //uint32_t size = 280*90*3*sizeof(uint8_t);
   //Serial.println(size, DEC);
   Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap()); 
   Logger.Info_f(F("Largest free block: %d"), heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
   //buf1 = (uint8_t *)malloc(size);
-  buf1 = (uint8_t *)heap_caps_malloc(size, MALLOC_CAP_8BIT);
-  if(buf1 == nullptr) Serial.println(F("allocation buf1 did not succeed"));
-  Logger.Info_f(F("Largest free block: %d"), heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
- 
-  buf2 = (uint8_t *)heap_caps_malloc(size, MALLOC_CAP_8BIT);
-  if(buf2 == nullptr) Serial.println(F("allocation buf2 did not succeed"));
+
 
   pinMode(16, INPUT_PULLUP);
   pinMode(17, INPUT_PULLUP);
@@ -107,17 +101,17 @@ void setup()
   digitalWrite(33, HIGH);
 
   Logger.Info(F("... Startup"));
-  //wheel = new Wheel();
-  dw = new DISPLAY_Wheel();
-  dw->set_rotation(3);
-  dw->init();
+  wheel = new Wheel();
+  //dw = new DISPLAY_Wheel();
+  //dw->set_rotation(0);
+  //dw->init();
 
-  for(int i=0; i< 280*90*3; i++)
-  {
-    buf1[i] = 0x0;
-    buf2[i] = 0x0;
-  }
-
+  //for(int i=0; i< 280*90*3; i++)
+  //{
+  //  buf1[i] = 0x0;
+  //  buf2[i] = 0x0;
+  //}
+  wheel->display->test();
   Logger.Info(F("... Init done"));
   Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap()); 
 }
@@ -132,15 +126,15 @@ void loop()
   Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap());
   Logger.Info_f(F("Largest free block: %d"), heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
  
-  dw->draw_background(lcars, lcars_size);
+  //dw->draw_background(lcars, lcars_size);
   //dw->fill_screen(0xf800);
-  //wheel->process_input_change();
-  vTaskDelay(1000);
+  wheel->process_input_change();
+  //vTaskDelay(1000);
 
   //for(int i=0; i<100; i++)
   //{
-  dw->windowScroll(60, 60, 280, 180, 0, 180, buf1, buf2, 5);
+  //dw->windowScroll(60, 60, 180, 280, 90, 140, buf1, buf2, 5);
  // }
   //free(buf);
-  vTaskDelay(3000);
+  //vTaskDelay(100);
 }
