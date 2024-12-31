@@ -38,8 +38,8 @@ void DISPLAY_Wheel::init()
     else Logger.Info(F("....Allocation of upper scroll buffer (buf1) successful"));
 
     buf2 = (uint8_t *)heap_caps_malloc(buffer_size, MALLOC_CAP_8BIT);
-    if(buf1 == nullptr) Logger.Error(F("....Allocation of lower scroll buffer (buf1) did not succeed"));
-    else Logger.Info(F("....Allocation of lower scroll buffer (buf1) successful"));
+    if(buf2 == nullptr) Logger.Error(F("....Allocation of lower scroll buffer (buf2) did not succeed"));
+    else Logger.Info(F("....Allocation of lower scroll buffer (buf2) successful"));
     Logger.Info_f(F("....Free heap: %d"), ESP.getFreeHeap());
     Logger.Info_f(F("....Largest free block: %d"), heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
     Logger.Info(F("Done."));

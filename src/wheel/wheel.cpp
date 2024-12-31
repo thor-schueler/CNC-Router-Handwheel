@@ -29,12 +29,26 @@ bool Wheel::key_changed = false;
  */
 Wheel::Wheel()
 {
-    Logger.Info(F("... Startup"));
-    Logger.Info(F("...    Initialize Display"));
+    Logger.Info(F("Startup"));
+    Logger.Info(F("....Initialize Display"));
     display = new DISPLAY_Wheel();
     display->set_rotation(3);
     display->init();
 
+    Logger.Info(F("....Inititialize GPIO pins"));
+    pinMode(AXIS_Z, INPUT_PULLUP);
+    pinMode(AXIS_X, INPUT_PULLUP);
+    pinMode(AXIS_Y, INPUT_PULLUP);
+    pinMode(EMS, INPUT_PULLUP);
+    pinMode(WHEEL_A, INPUT);
+    pinMode(WHEEL_B, INPUT);
+    pinMode(TOUCH_CS, OUTPUT);
+    digitalWrite(TOUCH_CS, HIGH);
+
+    Logger.Info(F("....Attach event receivers for GPIO"));
+
+
+    Logger.Info(F("....Initialize GPIO Multiplexer"));
     pcf8575 = new PCF8575(PCF8575_ADDRESS, PCF8575_INT_PIN, Wheel::on_PCF8575_input_changed);
     pcf8575->pinMode(P0, INPUT);
     pcf8575->pinMode(P1, INPUT);
@@ -54,7 +68,7 @@ Wheel::Wheel()
     pcf8575->pinMode(P15, INPUT);
     pcf8575->begin();
 
-    Logger.Info("... Startup done");
+    Logger.Info("Startup done");
 }
 
 void Wheel::on_PCF8575_input_changed()

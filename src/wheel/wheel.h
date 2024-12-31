@@ -13,7 +13,15 @@
 
 #define AXIS_X 18
 #define AXIS_Y 17
-#define AXIS Z 16
+#define AXIS_Z 35
+    // originally we used GPIO16 for AXIS_Z, but this is an issue on 
+    // EPS32 units that have PSRAM as GPIO16 serves as CS line for 
+    // the PSRAM. Any transition from High to Low activates the chip
+    // and hnags up the ESP32....
+
+#define EMS 19
+#define WHEEL_A 23
+#define WHEEL_B 27
 
 #define TOUCH_CS 33
 

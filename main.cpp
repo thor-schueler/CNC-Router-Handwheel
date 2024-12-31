@@ -87,30 +87,9 @@ void setup()
     //}
   }
   
-  //uint32_t size = 280*90*3*sizeof(uint8_t);
-  //Serial.println(size, DEC);
-  Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap()); 
-  Logger.Info_f(F("Largest free block: %d"), heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
-  //buf1 = (uint8_t *)malloc(size);
-
-
-  pinMode(16, INPUT_PULLUP);
-  pinMode(17, INPUT_PULLUP);
-  pinMode(18, INPUT_PULLUP);
-  pinMode(33, OUTPUT);
-  digitalWrite(33, HIGH);
 
   Logger.Info(F("... Startup"));
   wheel = new Wheel();
-  //dw = new DISPLAY_Wheel();
-  //dw->set_rotation(0);
-  //dw->init();
-
-  //for(int i=0; i< 280*90*3; i++)
-  //{
-  //  buf1[i] = 0x0;
-  //  buf2[i] = 0x0;
-  //}
   wheel->display->test();
   Logger.Info(F("... Init done"));
   Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap()); 
@@ -123,8 +102,8 @@ void setup()
  */
 void loop()
 {
-  Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap());
-  Logger.Info_f(F("Largest free block: %d"), heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
+  //Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap());
+  //Logger.Info_f(F("Largest free block: %d"), heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
  
   //dw->draw_background(lcars, lcars_size);
   //dw->fill_screen(0xf800);
@@ -136,5 +115,6 @@ void loop()
   //dw->windowScroll(60, 60, 180, 280, 90, 140, buf1, buf2, 5);
  // }
   //free(buf);
-  //vTaskDelay(100);
+  Logger.Info_f(F("%d-%d-%d-%d"),digitalRead(35),digitalRead(17),digitalRead(18), digitalRead(19));
+  vTaskDelay(10);
 }
