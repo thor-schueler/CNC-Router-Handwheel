@@ -54,15 +54,12 @@ void DISPLAY_Wheel::w_area_print(String s, bool newline)
     set_text_color(0xffff);
     set_text_back_color(0x0);
     set_text_size(1);
-    Logger.Info_f(F("printing %d"), w_area_cursor_y);
     while(w_area_cursor_y > w_area_y2 - text_size*16)
     {
-        Logger.Info(F("scroll"));
         // scroll display area to make space
         window_scroll(w_area_x1, w_area_y1, w_area_x2-w_area_x1, w_area_y2-w_area_y1, 
             0, text_size*16, buf1, buf2, text_size*16);
         w_area_cursor_y = w_area_cursor_y - text_size*16;
-        Logger.Info_f(F("printing %d"), w_area_cursor_y);
     }
 
     print_string(s, w_area_cursor_x, w_area_cursor_y);
@@ -286,6 +283,23 @@ void DISPLAY_Wheel::write_axis(Axis axis)
         case Z: print_string("Z", 155, 158); break;
     }
 
+}
+
+/**
+ * @brief Writes emergency indicator to the disaply
+ * @param has_emergency - Whether there is an emergency or not.
+*/
+void DISPLAY_Wheel::write_emergency(bool has_emergency)
+{
+  if(has_emergency)
+  {
+    fill_rect(0, 50, 66, 24, 0xf800);
+
+  }
+  else
+  {
+    fill_rect(0, 50, 66, 24, 0x07E0);    
+  }
 }
 
 /**

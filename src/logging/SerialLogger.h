@@ -6,9 +6,10 @@
 #define SERIALLOGGER_H
 
 #include <Arduino.h>
+#include <HardwareSerial.h>
 
 #ifndef SERIAL_LOGGER_BAUD_RATE
-#define SERIAL_LOGGER_BAUD_RATE 115200
+#define SERIAL_LOGGER_BAUD_RATE 230400
 #endif
 
 /**

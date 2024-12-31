@@ -55,6 +55,12 @@ class DISPLAY_Wheel:public DISPLAY_SPI
 		void write_axis(Axis axis);
 
 		/**
+		 * @brief Writes emergency indicator to the disaply
+		 * @param has_emergency - Whether there is an emergency or not.
+		*/
+		void write_emergency(bool has_emergency);
+
+		/**
 		 * @brief Writes the current feed selection to the display
 		 * @param feed - The value for the feed selection to write
 		 */

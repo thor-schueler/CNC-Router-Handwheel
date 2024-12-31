@@ -4,6 +4,7 @@
 #ifndef _WHEEL_H_
 #define _WHEEL_H_
 
+#include <unordered_map>
 #include "Arduino.h"
 #include "PCF8575.h"
 #include "../display/display_wheel.h"
@@ -25,6 +26,14 @@
 
 #define TOUCH_CS 33
 
+typedef struct Command
+{
+    String _name_on; 
+    String _command_on;
+    String _name_off;
+    String _command_off;
+} Command_t;
+
 /**
  * @brief Implements the basic wheel functionality
  */
@@ -35,21 +44,40 @@ class Wheel
          * @brief Creates a new instance of Wheel
          */
         Wheel();
-        void process_input_change();
-        
-        DISPLAY_Wheel *display = nullptr;
+        static std::unordered_map<uint8_t, Command_t> Commands;
+
     protected:
+
         static void on_PCF8575_input_changed();
+        static void extended_GPIO_watcher(void* args);
+        static void display_runner(void* args);
+
+        void handle_axis_change(); 
+        void handle_ems_change(); 
+
+
 
     private: 
-        static bool key_changed;
-        PCF8575 *pcf8575 = nullptr;
-        
-        float x = 0.0;
-        float y = 0.0;
-        float z = 0.0;
-        float selected_feed = Feed::NANO;
-        Axis selected_axis = Axis::X;
+        static bool _key_changed;
+                
+
+        PCF8575 *_pcf8575 = nullptr;
+        DISPLAY_Wheel *_display = nullptr;
+
+        TaskHandle_t _extendedGPIOWatcher;
+        TaskHandle_t _displayRunner;
+        TaskHandle_t _encoderWatcher;
+
+        SemaphoreHandle_t _display_mutex;
+
+        float _x = 0.0;
+        float _y = 0.0;
+        float _z = 0.0;
+        float _selected_feed = Feed::NANO;
+        bool _has_emergency = false;
+        uint16_t _button_state = 0xff;
+        uint16_t _command_state = 0xff;
+        Axis _selected_axis = Axis::X;
 };
 
 #endif

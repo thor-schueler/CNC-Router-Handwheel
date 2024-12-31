@@ -10,7 +10,6 @@
 #include "display_spi.h"
 #include "lcd_spi_registers.h"
 #include "mcu_spi_magic.h"
-#include "../logging/SerialLogger.h"
 
 #define TFTLCD_DELAY16  0xFFFF
 #define TFTLCD_DELAY8   0x7F

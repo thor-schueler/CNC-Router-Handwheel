@@ -45,7 +45,7 @@ SET_LOOP_TASK_STACK_SIZE(16384);
 #endif
 
 Wheel *wheel = NULL;
-DISPLAY_Wheel *dw = NULL;
+//DISPLAY_Wheel *dw = NULL;
 
 //uint8_t buf1[280*90*3];
 //uint8_t buf2[280*90*3];
@@ -90,7 +90,7 @@ void setup()
 
   Logger.Info(F("... Startup"));
   wheel = new Wheel();
-  wheel->display->test();
+  //wheel->display->test();
   Logger.Info(F("... Init done"));
   Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap()); 
 }
@@ -107,7 +107,8 @@ void loop()
  
   //dw->draw_background(lcars, lcars_size);
   //dw->fill_screen(0xf800);
-  wheel->process_input_change();
+  //wheel->update_screen();
+  //wheel->process_input_change();
   //vTaskDelay(1000);
 
   //for(int i=0; i<100; i++)
@@ -115,6 +116,6 @@ void loop()
   //dw->windowScroll(60, 60, 180, 280, 90, 140, buf1, buf2, 5);
  // }
   //free(buf);
-  Logger.Info_f(F("%d-%d-%d-%d"),digitalRead(35),digitalRead(17),digitalRead(18), digitalRead(19));
+  //Logger.Info_f(F("%d-%d-%d-%d"),digitalRead(35),digitalRead(17),digitalRead(18), digitalRead(19));
   vTaskDelay(10);
 }

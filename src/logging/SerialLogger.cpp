@@ -33,6 +33,8 @@ void SerialLogger::Info(String message)
   this->writeTime();
   Serial.print(F(" [INFO] "));
   Serial.println(message);
+  Serial.flush();
+  vTaskDelay(10);
 }
 
 /**
@@ -76,6 +78,8 @@ size_t SerialLogger::Info_f(String format, ...)
   len = Serial.print(buf);
   free(buf);
   Serial.println();
+  Serial.flush();
+  vTaskDelay(10);
   return len;
 }
 #pragma endregion 
@@ -92,6 +96,8 @@ void SerialLogger::Error(String message)
   this->writeTime();
   Serial.print(F(" [ERROR] "));
   Serial.println(message);
+  Serial.flush();
+  vTaskDelay(10);
 }
 
 /**
@@ -134,6 +140,8 @@ size_t SerialLogger::Error_f(String format, ...)
   free(buf);
 
   Serial.println();
+  Serial.flush();
+  vTaskDelay(10);
   return len;
 }
 #pragma endregion
@@ -155,7 +163,8 @@ void SerialLogger::writeTime()
   Serial.print("/");
   Serial.print(ptm->tm_mday);
   Serial.print(" ");
-
+  Serial.flush();
+  
   if (ptm->tm_hour < 10)
   {
     Serial.print(0);
@@ -178,6 +187,8 @@ void SerialLogger::writeTime()
   }
 
   Serial.print(ptm->tm_sec);
+  Serial.flush();
+  vTaskDelay(10);
 }
 #pragma endregion
 
