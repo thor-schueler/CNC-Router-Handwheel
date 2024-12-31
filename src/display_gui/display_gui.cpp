@@ -662,10 +662,12 @@ void DISPLAY_GUI::print_number_float(double num, uint8_t dec, int16_t x, int16_t
  * @param st - the String to print
  * @param x - the x coordinate for the cursor
  * @param y - the y coordinate for the cursor
+ * @param xo - x origin of the print area
+ * @param yo - y origin of the print area
  */
-void DISPLAY_GUI::print_string(const uint8_t *st, int16_t x, int16_t y)
+void DISPLAY_GUI::print_string(const uint8_t *st, int16_t x, int16_t y, int16_t xo, int16_t yo)
 {
-	print((uint8_t *)st, x, y);
+	print((uint8_t *)st, x, y, xo, yo);
 }
 
 /** 
@@ -673,10 +675,12 @@ void DISPLAY_GUI::print_string(const uint8_t *st, int16_t x, int16_t y)
  * @param st - the String to print
  * @param x - the x coordinate for the cursor
  * @param y - the y coordinate for the cursor
+ * @param xo - x origin of the print area
+ * @param yo - y origin of the print area
  */
-void DISPLAY_GUI::print_string(uint8_t *st, int16_t x, int16_t y)
+void DISPLAY_GUI::print_string(uint8_t *st, int16_t x, int16_t y, int16_t xo, int16_t yo)
 {
-	print(st, x, y);
+	print(st, x, y, xo, yo);
 }
 
 /** 
@@ -684,10 +688,12 @@ void DISPLAY_GUI::print_string(uint8_t *st, int16_t x, int16_t y)
  * @param st - the String to print
  * @param x - the x coordinate for the cursor
  * @param y - the y coordinate for the cursor
+ * @param xo - x origin of the print area
+ * @param yo - y origin of the print area
  */
-void DISPLAY_GUI::print_string(String st, int16_t x, int16_t y)
+void DISPLAY_GUI::print_string(String st, int16_t x, int16_t y, int16_t xo, int16_t yo)
 {
-	print((uint8_t *)(st.c_str()), x, y);
+	print((uint8_t *)(st.c_str()), x, y, xo, yo);
 }
 
 /**
@@ -964,8 +970,10 @@ void DISPLAY_GUI::fill_circle_helper(int16_t x0, int16_t y0, int16_t r, uint8_t 
  * @param st - the string to print
  * @param x - the x coordinate
  * @param y - the y coordinate
+ * @param xo - x origin of the print area
+ * @param yo - y origin of the print area
  */
-size_t DISPLAY_GUI::print(uint8_t *st, int16_t x, int16_t y)
+size_t DISPLAY_GUI::print(uint8_t *st, int16_t x, int16_t y, int16_t xo, int16_t yo)
 {
 	int16_t pos;
 	uint16_t len;
@@ -974,17 +982,17 @@ size_t DISPLAY_GUI::print(uint8_t *st, int16_t x, int16_t y)
 	if (x == CENTER || x == RIGHT) 
 	{
 		len = strlen((const char *)st) * 6 * text_size;		
-		pos = (get_display_width() - len); 
+		pos = (get_display_width() - xo - len); 
 		if (x == CENTER)
 		{
-			x = pos/2;
+			x = xo + pos/2;
 		}
 		else
 		{
-			x = pos - 1;
+			x = xo + pos - 1;
 		}
 	}
-    set_text_cursor(x, y);
+    set_text_cursor(x + xo, y + yo);
 	while(1)
 	{
 		unsigned char ch = *(p++);
@@ -995,12 +1003,14 @@ size_t DISPLAY_GUI::print(uint8_t *st, int16_t x, int16_t y)
 		if(write(ch))
 		{
 			n++;
+			if(ch=='\n') text_x = xo;
 		}
 		else
 		{
 			break;
 		}
-	}	
+	}
+	set_text_cursor(text_x - xo, text_y-yo);
 	return n;
 }
 

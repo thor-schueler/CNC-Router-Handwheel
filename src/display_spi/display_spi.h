@@ -37,14 +37,14 @@ class DISPLAY_SPI:public DISPLAY_GUI
 		 * @param b - Blue color value
 		 * @returns 16-bit packed color value
 		 */
-		uint16_t RGB_to_565(uint8_t r, uint8_t g, uint8_t b);
+		uint16_t RGB_to_565(uint8_t r, uint8_t g, uint8_t b) override;
 
 		/**
 		 * @brief draw backgound image on the display
 		 * @param image - array to image containing 3 6-bit color values per pixel
 		 * @param size - the number of elements in the image (should be wxhx3)
 		 */
-		void draw_background(const unsigned char* image, size_t size);
+		void draw_background(const unsigned char* image, size_t size) override;
 
 		/**
 		 * @brief Draws a bitmap on the display
@@ -63,7 +63,7 @@ class DISPLAY_SPI:public DISPLAY_GUI
 		 * @param y - y coordinate of the pixel
 		 * @param color - the color of the pixel to set
 		 */
-		void draw_pixel(int16_t x, int16_t y, uint16_t color);
+		void draw_pixel(int16_t x, int16_t y, uint16_t color) override;
 
 		/**
 		 * @brief Fill area from x to x+w, y to y+h
@@ -73,13 +73,13 @@ class DISPLAY_SPI:public DISPLAY_GUI
 		 * @param h - height
 		 * @param color - color
 		 */
-		void fill_rect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color);
+		void fill_rect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color) override;
 
 		/**
 		 * @brief Gets teh display height
 		 * @returns The display height
 		 */
-		int16_t get_height(void) const;
+		int16_t get_height(void) const override;
 
 		/**
 		 * @brief Gets the current display rotation
@@ -95,7 +95,7 @@ class DISPLAY_SPI:public DISPLAY_GUI
 		 * @brief Gets the display width
 		 * @returns The display width
 		 */
-		int16_t get_width(void) const;
+		int16_t get_width(void) const override;
 
 		/**
 		 * @brief Initializes the display
@@ -115,7 +115,7 @@ class DISPLAY_SPI:public DISPLAY_GUI
 		 * @param first - true to first send an initialization command
 		 * @param flags - flags
 		 */
-		void push_color_table(uint16_t * block, int16_t n, bool first, uint8_t flags);
+		void push_color_table(uint16_t * block, int16_t n, bool first, uint8_t flags) override;
 
 		/**
 		 * @brief Push color table for 8 bits to controller
@@ -165,7 +165,7 @@ class DISPLAY_SPI:public DISPLAY_GUI
 		 * @param h - height of the area to read
 		 * @returns The number of values read
 		 */
-		uint32_t read_GRAM(int16_t x, int16_t y, uint16_t *block, int16_t w, int16_t h);
+		uint32_t read_GRAM(int16_t x, int16_t y, uint16_t *block, int16_t w, int16_t h) override;
 
 		/**
 		 * @brief Read graphics RAM data as RGB byte values
@@ -192,7 +192,7 @@ class DISPLAY_SPI:public DISPLAY_GUI
 		 * @param x2 - Lower right x
 		 * @param y2 - Lower right y
 		 */
-		void set_addr_window(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2);
+		void set_addr_window(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2) override;
 
 		/**
 		 * @brief Starts the display, initializes registers

@@ -294,24 +294,30 @@ class DISPLAY_GUI
 		 * @param st - the String to print
 		 * @param x - the x coordinate for the cursor
 		 * @param y - the y coordinate for the cursor
+		 * @param xo - x origin of the print area
+		 * @param yo - y origin of the print area
 		 */
-		void print_string(const uint8_t *st, int16_t x, int16_t y);
+		void print_string(const uint8_t *st, int16_t x, int16_t y, int16_t xo=0, int16_t yo=0);
 		
 		/** 
 		 * @brief Print a string to the display
 		 * @param st - the String to print
 		 * @param x - the x coordinate for the cursor
 		 * @param y - the y coordinate for the cursor
+		 * @param xo - x origin of the print area
+		 * @param yo - y origin of the print area
 		 */		
-		void print_string(uint8_t *st, int16_t x, int16_t y);
+		void print_string(uint8_t *st, int16_t x, int16_t y, int16_t xo=0, int16_t yo=0);
 		
 		/** 
 		 * @brief Print a string to the display
 		 * @param st - the String to print
 		 * @param x - the x coordinate for the cursor
 		 * @param y - the y coordinate for the cursor
+		 * @param xo - x origin of the print area
+		 * @param yo - y origin of the print area
 		 */		
-		void print_string(String st, int16_t x, int16_t y);
+		void print_string(String st, int16_t x, int16_t y, int16_t xo=0, int16_t yo=0);
 
 		/**
 		 * @brief Read color data for pixel(x,y)
@@ -405,6 +411,16 @@ class DISPLAY_GUI
 		 * @returns The number of words read
 		 */		
 		virtual uint32_t read_GRAM(int16_t x, int16_t y, uint16_t *block, int16_t w, int16_t h)=0;
+
+		/**
+		 * @brief Print string
+		 * @param st - the string to print
+		 * @param x - the x coordinate
+		 * @param y - the y coordinate
+		 * @param xo - x origin of the print area
+		 * @param yo - y origin of the print area
+		 */
+		virtual size_t print(uint8_t *st, int16_t x, int16_t y, int16_t xo=0, int16_t yo=0);
 		#pragma endregion
 
 		#pragma region protected methods
@@ -454,14 +470,6 @@ class DISPLAY_GUI
 		 * @param delta - mystery offset
 		 */
 		void fill_circle_helper(int16_t x0, int16_t y0, int16_t r, uint8_t cornername,int16_t delta);
-
-		/**
-		 * @brief Print string
-		 * @param st - the string to print
-		 * @param x - the x coordinate
-		 * @param y - the y coordinate
-		 */
-		size_t print(uint8_t *st, int16_t x, int16_t y);
 
 		/** 
 		 * @brief Write a char to the display

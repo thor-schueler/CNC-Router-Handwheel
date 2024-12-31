@@ -33,7 +33,7 @@ std::unordered_map<uint8_t, Command_t>Wheel::Commands = {
     {2, {"Probe Z", "G4 P3;G21G91G38.2Z-30F80; G0Z1; G38.2Z-2F10;\n    G92 Z0; G0Z5M30 ; Probe Z", "", ""}},
     {3, {"Homing", "$H ; Homing cycle", "", ""}},
     {4, {"Origin", "; Got to WCS origin", "", ""}},
-    {5, {"Start\nSpindle", "M3 S6000 ; Start the spindle", "Stop\nSpindle", "M5; Stop the spindle"}},
+    {5, {"Start Spindle", "M3 S6000 ; Start the spindle", "Stop Spindle", "M5; Stop the spindle"}},
     {6, {"Reset", "; Reset the machine", "", ""}},
     {7, {"Unlock", "; Unlock the machine", "", ""}},
     {8, {"NA", "; Command 9 not defined", "", ""}},
@@ -153,7 +153,7 @@ void Wheel::extended_GPIO_watcher(void* args)
                         if (xSemaphoreTake(_this->_display_mutex, portMAX_DELAY) == pdTRUE) 
                         {
                             _this->_display->w_area_print(c, true); 
-                            //_this->_display->write_command_name(n); 
+                            _this->_display->write_command(n); 
                             xSemaphoreGive(_this->_display_mutex);
                         }
                         // write command to serial

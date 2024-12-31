@@ -18,8 +18,8 @@ DISPLAY_Wheel::DISPLAY_Wheel()
     w_area_y1 = 140;
     w_area_x2 = 480;
     w_area_y2 = 316;
-    w_area_cursor_x = w_area_x1;
-    w_area_cursor_y = w_area_y1;
+    w_area_cursor_x = 0;
+    w_area_cursor_y = 0;
 }
 
 /**
@@ -46,6 +46,20 @@ void DISPLAY_Wheel::init()
 }
 
 /**
+ * @brief Print string
+ * @param st - the string to print
+ * @param x - the x coordinate
+ * @param y - the y coordinate
+ * @param xo - x origin of the print area
+ * @param yo - y origin of the print area
+ */
+size_t DISPLAY_Wheel::print(uint8_t *st, int16_t x, int16_t y, int16_t xo, int16_t yo) 
+{
+
+  return DISPLAY_SPI::print(st, x, y, xo, yo);
+};
+
+/**
  * @brief Print a string in the working area. Advances the cursor to keep track of position
  * @param s - String to print
  */
@@ -54,21 +68,21 @@ void DISPLAY_Wheel::w_area_print(String s, bool newline)
     set_text_color(0xffff);
     set_text_back_color(0x0);
     set_text_size(1);
-    while(w_area_cursor_y > w_area_y2 - text_size*16)
+    while(w_area_y1 + w_area_cursor_y > w_area_y2 - text_size*8)
     {
         // scroll display area to make space
         window_scroll(w_area_x1, w_area_y1, w_area_x2-w_area_x1, w_area_y2-w_area_y1, 
-            0, text_size*16, buf1, buf2, text_size*16);
-        w_area_cursor_y = w_area_cursor_y - text_size*16;
+            0, text_size*8, buf1, buf2, text_size*8);
+        w_area_cursor_y = w_area_cursor_y - text_size*8;
     }
 
-    print_string(s, w_area_cursor_x, w_area_cursor_y);
+    print_string(s, w_area_cursor_x, w_area_cursor_y, w_area_x1, w_area_y1);
     w_area_cursor_x = get_text_X_cursor();
     w_area_cursor_y = get_text_Y_cursor();
     if(newline)
     {
-        print_string("\n", w_area_cursor_x, w_area_cursor_y);
-        w_area_cursor_x = w_area_x1;
+        print_string("\n", w_area_cursor_x, w_area_cursor_y, w_area_x1, w_area_y1);
+        w_area_cursor_x = 0;
         w_area_cursor_y = get_text_Y_cursor();
     }
 
@@ -286,6 +300,19 @@ void DISPLAY_Wheel::write_axis(Axis axis)
 }
 
 /**
+ * @brief Writes the last command into the display
+ * @param c - the command name.
+ */
+void DISPLAY_Wheel::write_command(String c)
+{
+    fill_rect(136,100, 300, 9, RGB_to_565(127,106,0));
+    set_text_back_color(RGB_to_565(127,106,0));
+    set_text_color(0xffffff);
+    set_text_size(1);
+    print_string(c, 141, 100);  
+}
+
+/**
  * @brief Writes emergency indicator to the disaply
  * @param has_emergency - Whether there is an emergency or not.
 */
@@ -294,11 +321,19 @@ void DISPLAY_Wheel::write_emergency(bool has_emergency)
   if(has_emergency)
   {
     fill_rect(0, 50, 66, 24, 0xf800);
-
+    fill_rect(66, 51, 1, 23, RGB_to_565(0x7f,0x0,0x0));
   }
   else
   {
-    fill_rect(0, 50, 66, 24, 0x07E0);    
+    fill_rect(0, 50, 66, 24, RGB_to_565(75, 255, 0));
+    fill_rect(1,50, 64, 1, RGB_to_565(28, 87, 3));
+    fill_rect(1,73, 64, 1, RGB_to_565(61, 207, 0));
+    fill_rect(0,51, 1, 22, RGB_to_565(51, 201, 0));
+    fill_rect(66,51, 1, 22, RGB_to_565(61, 140, 25));   
+    draw_pixel(0, 50, 0x0);
+    draw_pixel(66, 50, 0x0);
+    draw_pixel(0, 73, RGB_to_565(26, 145, 0));
+    draw_pixel(66, 73, RGB_to_565(39, 102, 11)); 
   }
 }
 

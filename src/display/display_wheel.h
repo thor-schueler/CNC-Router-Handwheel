@@ -36,6 +36,16 @@ class DISPLAY_Wheel:public DISPLAY_SPI
 		void init();
 
 		/**
+		 * @brief Print string
+		 * @param st - the string to print
+		 * @param x - the x coordinate
+		 * @param y - the y coordinate
+		 * @param xo - x origin of the print area
+		 * @param yo - y origin of the print area
+		 */
+		size_t print(uint8_t *st, int16_t x, int16_t y, int16_t xo=0, int16_t yo=0) override;
+
+		/**
 		 * @brief Print a string in the working area. Advances the cursor to keep track of position
 		 * @param s - String to print
 		 * @param newline - True to add a carriage return
@@ -53,6 +63,12 @@ class DISPLAY_Wheel:public DISPLAY_SPI
 		 * @param axis - The value for the axis to print
 		 */
 		void write_axis(Axis axis);
+
+		/**
+		 * @brief Writes the last command into the display
+		 * @param c - the command name.
+		 */
+		void write_command(String c);
 
 		/**
 		 * @brief Writes emergency indicator to the disaply
