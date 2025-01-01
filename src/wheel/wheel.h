@@ -45,6 +45,8 @@ class Wheel
          */
         Wheel();
         static std::unordered_map<uint8_t, Command_t> Commands;
+        int16_t _wheel_position = 0x0;
+
 
     protected:
 
@@ -52,8 +54,9 @@ class Wheel
         static void extended_GPIO_watcher(void* args);
         static void display_runner(void* args);
 
-        void handle_axis_change(); 
-        void handle_ems_change(); 
+        void IRAM_ATTR handle_axis_change(); 
+        void IRAM_ATTR handle_ems_change(); 
+        void IRAM_ATTR handle_encoder_change();
 
 
 
@@ -77,6 +80,8 @@ class Wheel
         bool _has_emergency = false;
         uint16_t _button_state = 0xff;
         uint16_t _command_state = 0xff;
+
+        int16_t _wheel_encoded = 0x0;
         Axis _selected_axis = Axis::X;
 };
 

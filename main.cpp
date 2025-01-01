@@ -27,6 +27,40 @@
 #define TELEMETRY_FREQUENCY_MILLISECS 120000
 #define AP_ENABLE_PIN 5
 
+/**
+ * Note that there is a bug in the Hardware Serial Implementation of the ESP32 core starting with v3.0.0 up that incorrectly
+ * initializes the UART with the wrong clock, resulting in barbled output for bad rates above 115200 and below 250000 baud.
+ * Since we need buad rate of 230400 for the wheel communication, we have two options: either implement serial communication uing 
+ * UART DMA directly (by Adjusting SerialLogger.cpp) using the code below or updating esp32-hal-uart.c method uartBegin, line 511 or 
+ * thereabouts. There is a if statement checking the baudrate. If the baudrate is <= 250000 the the clocksource is
+ * set to UART_SCLK_REF_TICK, otherwise the clocksource is UART_SCLK_APB. That is fine for baudrates up to 115200. However, for higher rates
+ * including 230400 should be UART_SCLK_APB. Therefore changing the if statement from <= 250000 to <= 230400 will fix
+ * the issue. 
+ * 
+ * Code for direct UART DMA:
+ *    if (!uart_is_driver_installed(UART_NUM_0))
+      { 
+        uart_config_t uart_config = { 
+          .baud_rate = 230400, 
+          .data_bits = UART_DATA_8_BITS, 
+          .parity = UART_PARITY_DISABLE, 
+          .stop_bits = UART_STOP_BITS_1, 
+          .flow_ctrl = UART_HW_FLOWCTRL_DISABLE, 
+          //.source_clk = UART_SCLK_REF_TICK, 
+          .source_clk = UART_SCLK_APB, 
+      }; 
+      // Enable UART0 with DMA 
+      uart_driver_install(UART_NUM_0, BUF_SIZE, BUF_SIZE, 10, NULL, ESP_INTR_FLAG_IRAM); 
+      uart_param_config(UART_NUM_0, &uart_config); 
+      uart_set_pin(UART_NUM_0, TX_PIN, RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE); 
+      uart_set_mode(UART_NUM_0, UART_MODE_UART); 
+
+      // write to UART
+      const char *data = "Hello, UART0 with DMA!\n"; 
+      uart_write_bytes(UART_NUM_0, data, strlen(data)); 
+*/
+
+
 //static Config config;
 //static Conveyor *conveyor = NULL;
 
@@ -117,5 +151,6 @@ void loop()
  // }
   //free(buf);
   //Logger.Info_f(F("%d-%d-%d-%d"),digitalRead(35),digitalRead(17),digitalRead(18), digitalRead(19));
-  vTaskDelay(10);
+  Logger.Info_f("Wheel Position: %i", wheel->_wheel_position);
+  vTaskDelay(1000);
 }

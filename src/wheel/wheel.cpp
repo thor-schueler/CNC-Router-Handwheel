@@ -59,8 +59,8 @@ Wheel::Wheel()
     pinMode(AXIS_X, INPUT_PULLUP);
     pinMode(AXIS_Y, INPUT_PULLUP);
     pinMode(EMS, INPUT_PULLUP);
-    pinMode(WHEEL_A, INPUT);
-    pinMode(WHEEL_B, INPUT);
+    pinMode(WHEEL_A, INPUT_PULLUP);
+    pinMode(WHEEL_B, INPUT_PULLUP);
     pinMode(TOUCH_CS, OUTPUT);
     digitalWrite(TOUCH_CS, HIGH);
 
@@ -69,6 +69,8 @@ Wheel::Wheel()
     attachInterrupt(digitalPinToInterrupt(AXIS_Y), std::bind(&Wheel::handle_axis_change, this), FALLING);
     attachInterrupt(digitalPinToInterrupt(AXIS_Z), std::bind(&Wheel::handle_axis_change, this), FALLING);
     attachInterrupt(digitalPinToInterrupt(EMS), std::bind(&Wheel::handle_ems_change, this), CHANGE);
+    attachInterrupt(digitalPinToInterrupt(WHEEL_A), std::bind(&Wheel::handle_encoder_change, this), CHANGE); 
+    attachInterrupt(digitalPinToInterrupt(WHEEL_B), std::bind(&Wheel::handle_encoder_change, this), CHANGE);
 
     Logger.Info(F("....Initialize GPIO Multiplexer"));
     _pcf8575 = new PCF8575(PCF8575_ADDRESS, PCF8575_INT_PIN, Wheel::on_PCF8575_input_changed);
@@ -198,4 +200,27 @@ void IRAM_ATTR Wheel::handle_axis_change()
     if(!digitalRead(AXIS_X)) _selected_axis = Axis::X;
     if(!digitalRead(AXIS_Y)) _selected_axis = Axis::Y;
     else if(!digitalRead(AXIS_Z)) _selected_axis = Axis::Z;
+}
+
+void IRAM_ATTR Wheel::handle_encoder_change()
+{
+    static int8_t c = 0;
+    static const int8_t enconder_state_table[16] = {0, -1, 1, 0, 1, 0, 0, -1, -1, 0, 0, 1, 0, 1, -1, 0};
+    int MSB = digitalRead(WHEEL_A); // Most significant bit 
+    int LSB = digitalRead(WHEEL_B); // Least significant bit 
+    int encoded = (MSB << 1) | LSB; // Combine the two signals 
+    if(encoded != _wheel_encoded)
+    {
+        int sum = (_wheel_encoded << 2) | encoded;  // Add the two previous bits 
+        c += enconder_state_table[sum];
+        if(c == 4 || c == -4)
+        {
+            _wheel_position += c == 4 ? 1 : -1;
+            c = 0x0;
+
+            // Signal our job to run the axis....
+            
+        }
+        _wheel_encoded = encoded;                   // Update the last encoded value  
+    }
 }
