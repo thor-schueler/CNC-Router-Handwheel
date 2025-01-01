@@ -20,6 +20,9 @@ POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include <Arduino.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
 #include <FunctionalInterrupt.h>
 #include "wheel.h"
 #include "../logging/SerialLogger.h"
@@ -89,12 +92,12 @@ Wheel::Wheel()
     _has_emergency = digitalRead(EMS);
 
     Logger.Info(F("....Generating Mutexes"));
-    _display_mutex = xSemaphoreCreateBinary(); 
-    xSemaphoreGive(_display_mutex);
+    _display_mutex = xSemaphoreCreateBinary();  xSemaphoreGive(_display_mutex);
 
     Logger.Info("....Create various tasks");
-    xTaskCreatePinnedToCore(extended_GPIO_watcher, "extendedGPIOWatcher", 16384, this, 1, &_extendedGPIOWatcher, 0);
-    xTaskCreatePinnedToCore(display_runner, "displayRunner", 16384, this, 1, &_displayRunner, 0);
+    xTaskCreatePinnedToCore(extended_GPIO_watcher, "extendedGPIOWatcher", 2048, this, 1, &_extendedGPIOWatcher, 0);
+    xTaskCreatePinnedToCore(display_runner, "displayRunner", 8192, this, 1, &_displayRunner, 0);
+    xTaskCreatePinnedToCore(wheel_runner, "wheelRunner", 2048, this, 1, &_wheelRunner, 0);
 
     Logger.Info("Startup done");
 }
@@ -160,7 +163,6 @@ void Wheel::extended_GPIO_watcher(void* args)
                         }
                         // write command to serial
                         Serial.println(c);
-                        //Serial.write("\n");
                         Serial.flush();
                         _this->_command_state ^= (1 << i);
                         _this->_button_state |= (1 << i);                        
@@ -190,6 +192,55 @@ void Wheel::display_runner(void* args)
     }
 }
 
+String Wheel::format_string(const char* format, ...) 
+{
+    va_list args; 
+    va_start(args, format); 
+    
+    // Determine the size of the formatted string 
+    size_t size = vsnprintf(nullptr, 0, format, args) + 1; // Add space for null terminator 
+    va_end(args); 
+    
+    // Create a buffer of the appropriate size
+    std::vector<char> buffer(size); 
+    
+    // Format the string 
+    va_start(args, format); 
+    vsnprintf(buffer.data(), size, format, args); va_end(args); 
+    return String(buffer.data());
+}
+
+void Wheel::wheel_runner(void* args)
+{
+    Wheel *_this = reinterpret_cast<Wheel *>(args);
+    for (;;) 
+    { 
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+
+        // this section is executed for every wheel position change.
+        // To tranlsate into the CNC command, we need to use feed and axis
+        switch(_this->_selected_axis)
+        {
+            case Axis::X:
+                _this->_x += _this->_selected_feed * _this->_direction;
+                break;
+            case Axis::Y:
+                _this->_y += _this->_selected_feed * _this->_direction;
+                break;
+            case Axis::Z:
+                _this->_z += _this->_selected_feed * _this->_direction;
+                break;             
+        }
+        
+        String s = _this->format_string("G21G91%c%c%fF2000", 
+                (char)_this->_selected_axis,
+                _this->_direction == -1 ? '-': '+' ,
+                _this->_selected_feed);
+        Serial.println(s);
+    }
+}
+
+
 void IRAM_ATTR Wheel::handle_ems_change()
 {
     _has_emergency = digitalRead(EMS);
@@ -216,11 +267,18 @@ void IRAM_ATTR Wheel::handle_encoder_change()
         if(c == 4 || c == -4)
         {
             _wheel_position += c == 4 ? 1 : -1;
+            _direction = c > 0 ? 1 : -1;
             c = 0x0;
+            _wheel_encoded = encoded;   // Update the last encoded value
 
             // Signal our job to run the axis....
-            
+            BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+            vTaskNotifyGiveFromISR(_instance->_wheelRunner, &xHigherPriorityTaskWoken); 
+            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
         }
-        _wheel_encoded = encoded;                   // Update the last encoded value  
+        else
+        {
+            _wheel_encoded = encoded;   // Update the last encoded value  
+        }
     }
 }

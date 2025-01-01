@@ -7,7 +7,7 @@
 #include "Arduino.h"
 #include "../display_spi/display_spi.h"
 
-typedef enum { X, Y, Z } Axis;
+typedef enum { X=88, Y=89, Z=90 } Axis;
 struct Feed { 
 	static constexpr float NANO = 0.001f; 
 	static constexpr float MICRO = 0.01f; 

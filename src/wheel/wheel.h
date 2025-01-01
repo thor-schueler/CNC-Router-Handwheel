@@ -53,6 +53,7 @@ class Wheel
         static void on_PCF8575_input_changed();
         static void extended_GPIO_watcher(void* args);
         static void display_runner(void* args);
+        static void wheel_runner(void* args);
 
         void IRAM_ATTR handle_axis_change(); 
         void IRAM_ATTR handle_ems_change(); 
@@ -62,7 +63,7 @@ class Wheel
 
     private: 
         static bool _key_changed;
-                
+        String format_string(const char* format, ...);      
 
         PCF8575 *_pcf8575 = nullptr;
         DISPLAY_Wheel *_display = nullptr;
@@ -70,9 +71,10 @@ class Wheel
         TaskHandle_t _extendedGPIOWatcher;
         TaskHandle_t _displayRunner;
         TaskHandle_t _encoderWatcher;
+        TaskHandle_t _wheelRunner;
 
         SemaphoreHandle_t _display_mutex;
-
+        
         float _x = 0.0;
         float _y = 0.0;
         float _z = 0.0;
@@ -81,6 +83,7 @@ class Wheel
         uint16_t _button_state = 0xff;
         uint16_t _command_state = 0xff;
 
+        int8_t _direction = 1;
         int16_t _wheel_encoded = 0x0;
         Axis _selected_axis = Axis::X;
 };
