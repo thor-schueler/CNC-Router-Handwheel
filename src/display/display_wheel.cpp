@@ -88,6 +88,83 @@ void DISPLAY_Wheel::w_area_print(String s, bool newline)
 
 }
 
+void DISPLAY_Wheel::draw_arrow(int16_t x, int16_t y, Direction d, uint8_t size, int16_t color)
+{
+    const uint8_t _w = 8;
+    const uint8_t _h = 5;
+    if(d == Direction::LEFT || d == Direction::RIGHT)
+    {
+      fill_rect(x, y, _w*size, _h*size, color);
+      int _height = _h * size; 
+      int _width = 2 * size; 
+      int mid = ((_height+1)&~1)/2 - 1;
+      int c = 0;
+      if(d==Direction::LEFT)
+      {
+        fill_rect(x+size+2, y+((_h*size+1)&~1)/2-size+1, _w*(size-1), size, 0xffff);
+        for(int i=0; i < 2-size%2 ; i++) for(int k=0; k<_width; k++) draw_pixel(x+size+k, y+mid+i, 0xffff);
+        for(int i=0; i < mid ; i++)
+        {
+          c++;
+          for(int k=c; k<_width; k++)
+          {
+              draw_pixel(x+size+k, y+mid-1-i, 0xffff);
+              draw_pixel(x+size+k, y+mid+1+i, 0xffff);
+          }
+        } 
+      }
+      else
+      {  
+        fill_rect(x+size, y+((_h*size+1)&~1)/2-size+1, _w*(size-1), size, 0xffff);
+        for(int i=0; i < 2-size%2 ; i++) for(int k=0; k<_width; k++) draw_pixel(x-k+(_w*size)-size-1, y+mid+i, 0xffff);
+        for(int i=0; i < mid ; i++)
+        {
+          c++;
+          for(int k=c; k<_width; k++)
+          {
+              draw_pixel(x+_w*size-k-4, y+mid-1-i, 0xffff);
+              draw_pixel(x+_w*size-k-4, y+mid+1+i, 0xffff);
+          }
+        } 
+      }
+    }
+    else
+    {
+      int _width = _h * size; 
+      int _height = 2 * size; 
+      int mid = ((_width+1)&~1)/2 - 1;
+      int c = 0;
+      fill_rect(x, y, _h*size, _w*size, color);
+      if(d==Direction::UP)
+      {
+        fill_rect(x+((_h*size+1)&~1)/2-size+1, y+size+2, size, _w*(size-1), 0xffff);
+        for(int i=0; i < 2-size%2 ; i++) for(int k=0; k<_width; k++) draw_pixel(x+mid+i, y+size+k, 0xffff);
+        for(int i=0; i < mid ; i++)
+        {
+          c++;
+          for(int k=c; k<_height; k++)
+          {
+              draw_pixel(x+mid-1-i, y+size+k ,0xffff);
+              draw_pixel(x+mid+1+i, y+size+k ,0xffff);
+          }
+        } 
+      }   
+      else
+      {
+        fill_rect(x+((_h*size+1)&~1)/2-size+1, y+size, size, _w*(size-1), 0xffff);
+        for(int i=0; i < 2-size%2 ; i++) for(int k=0; k<_width; k++) draw_pixel(x+mid+i, y+_w*size-k-size-1, 0xffff);
+        for(int i=0; i < mid ; i++)
+        {
+          c++;
+          for(int k=c; k<_height; k++)
+          {
+              draw_pixel(x+mid-1-i, y+_w*size-k-size-1 ,0xffff);
+              draw_pixel(x+mid+1+i, y+_w*size-k-size-1 ,0xffff);
+          }
+        } 
+      }   
+    }
+}
 
 /**
  * @brief Implements scrolling for partial screen, both horizontally and vertically

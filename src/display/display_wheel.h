@@ -7,6 +7,8 @@
 #include "Arduino.h"
 #include "../display_spi/display_spi.h"
 
+#define ARROW_MIDDLE_ADJ(i) (uint8_t)((i <= 5) ? std::ceil(static_cast<float>(i) / 2) : std::floor(static_cast<float>(i - 1) / 3))
+
 typedef enum { X=88, Y=89, Z=90 } Axis;
 struct Feed { 
 	static constexpr float NANO = 0.001f; 
@@ -14,6 +16,7 @@ struct Feed {
 	static constexpr float MILLI = 0.1f; 
 	static constexpr float FULL = 1.0f;
 };
+typedef enum { UP, DOWN, LEFT, RIGHT} Direction;
 
 extern const unsigned char lcars[] PROGMEM;
 extern const size_t lcars_size;
@@ -29,6 +32,8 @@ class DISPLAY_Wheel:public DISPLAY_SPI
 		 * @details initializes the SPI and LCD pins including CS, RS, RESET 
 		 */
 		DISPLAY_Wheel();
+
+		void draw_arrow(int16_t x, int16_t y, Direction d, uint8_t size, int16_t color);
 
 		/**
 		 * @brief Initializes the display
@@ -119,8 +124,6 @@ class DISPLAY_Wheel:public DISPLAY_SPI
 		 * parameter is divisible by two and that dy/2 is divisible by inc. 
 		 */
 		void window_scroll(int16_t x, int16_t y, int16_t wid, int16_t ht, int16_t dx, int16_t dy, uint8_t *bufh, uint8_t *bufl, uint8_t increment=1);
-
-
 
 	private: 
 		uint16_t w_area_x1;

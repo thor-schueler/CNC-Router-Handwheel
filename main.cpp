@@ -124,7 +124,6 @@ void setup()
 
   Logger.Info(F("... Startup"));
   wheel = new Wheel();
-  //wheel->display->test();
   Logger.Info(F("... Init done"));
   Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap()); 
 }
@@ -151,6 +150,6 @@ void loop()
  // }
   //free(buf);
   //Logger.Info_f(F("%d-%d-%d-%d"),digitalRead(35),digitalRead(17),digitalRead(18), digitalRead(19));
-  Logger.Info_f("Wheel Position: %i", wheel->_wheel_position);
-  vTaskDelay(1000);
+  //Logger.Info_f("Wheel Position: %i", wheel->_wheel_position);
+  //vTaskDelay(1000);
 }

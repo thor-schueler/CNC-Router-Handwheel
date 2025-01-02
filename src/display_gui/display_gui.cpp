@@ -979,11 +979,11 @@ size_t DISPLAY_GUI::print(uint8_t *st, int16_t x, int16_t y, int16_t xo, int16_t
 	uint16_t len;
 	const char * p = (const char *)st;
 	size_t n = 0;
-	if (x == CENTER || x == RIGHT) 
+	if (x == ALIGN_CENTER || x == ALIGN_RIGHT) 
 	{
 		len = strlen((const char *)st) * 6 * text_size;		
 		pos = (get_display_width() - xo - len); 
-		if (x == CENTER)
+		if (x == ALIGN_CENTER)
 		{
 			x = xo + pos/2;
 		}

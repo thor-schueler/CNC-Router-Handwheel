@@ -180,12 +180,24 @@ void Wheel::display_runner(void* args)
     { 
         if (xSemaphoreTake(_this->_display_mutex, portMAX_DELAY) == pdTRUE) 
         {
+            int16_t cf = _this->_display->RGB_to_565(0x00, 0xff, 0x00);
+            int16_t cb = _this->_display->RGB_to_565(0xff, 0x00, 0x00);
+            int16_t cn = _this->_display->RGB_to_565(0x44, 0x44, 0x44);
+            
+            
+
             _this->_display->write_axis(_this->_selected_axis);
             _this->_display->write_feed(_this->_selected_feed);
+            _this->_display->write_emergency(_this->_has_emergency);
             _this->_display->write_x(_this->_x);
             _this->_display->write_y(_this->_y);
             _this->_display->write_z(_this->_z);
-            _this->_display->write_emergency(_this->_has_emergency);
+            _this->_display->draw_arrow(162, 14, Direction::LEFT, 3, _this->_selected_axis == Axis::X && _this->_direction == -1 ? cb : cn);
+            _this->_display->draw_arrow(185, 14, Direction::RIGHT, 3, _this->_selected_axis == Axis::X && _this->_direction == 1 ? cf : cn);
+            _this->_display->draw_arrow(305, 14, Direction::UP, 3, _this->_selected_axis == Axis::Y && _this->_direction == -1 ? cb : cn);
+            _this->_display->draw_arrow(290, 14, Direction::DOWN, 3, _this->_selected_axis == Axis::Y && _this->_direction == 1 ? cf : cn);
+            _this->_display->draw_arrow(415, 14, Direction::UP, 3, _this->_selected_axis == Axis::Z && _this->_direction == -1 ? cf : cn);
+            _this->_display->draw_arrow(400, 14, Direction::DOWN, 3, _this->_selected_axis == Axis::Z && _this->_direction == 1 ? cb : cn);
             xSemaphoreGive(_this->_display_mutex);
         }
         vTaskDelay(10);
@@ -251,6 +263,7 @@ void IRAM_ATTR Wheel::handle_axis_change()
     if(!digitalRead(AXIS_X)) _selected_axis = Axis::X;
     if(!digitalRead(AXIS_Y)) _selected_axis = Axis::Y;
     else if(!digitalRead(AXIS_Z)) _selected_axis = Axis::Z;
+    _direction = 0;
 }
 
 void IRAM_ATTR Wheel::handle_encoder_change()

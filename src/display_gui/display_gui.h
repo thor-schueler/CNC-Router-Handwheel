@@ -27,9 +27,9 @@ POSSIBILITY OF SUCH DAMAGE.
 
 #define pgm_read_byte(addr) (*(const unsigned char *)(addr))
 #define pgm_read_word(addr) (*(const unsigned short *)(addr))
-#define LEFT 0
-#define RIGHT 9999
-#define CENTER 9998
+#define ALIGN_LEFT 0
+#define ALIGN_RIGHT 9999
+#define ALIGN_CENTER 9998
 
 extern const unsigned char lcd_font[] PROGMEM;
 

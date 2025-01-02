@@ -83,7 +83,7 @@ class Wheel
         uint16_t _button_state = 0xff;
         uint16_t _command_state = 0xff;
 
-        int8_t _direction = 1;
+        int8_t _direction = 0;
         int16_t _wheel_encoded = 0x0;
         Axis _selected_axis = Axis::X;
 };
