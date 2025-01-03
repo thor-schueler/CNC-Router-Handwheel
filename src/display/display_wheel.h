@@ -33,7 +33,7 @@ class DISPLAY_Wheel:public DISPLAY_SPI
 		 */
 		DISPLAY_Wheel();
 
-		void draw_arrow(int16_t x, int16_t y, Direction d, uint8_t size, int16_t color);
+		void draw_arrow(int16_t x, int16_t y, Direction d, uint8_t size, int16_t fg, int16_t bg);
 
 		/**
 		 * @brief Initializes the display

@@ -182,22 +182,34 @@ void Wheel::display_runner(void* args)
         {
             int16_t cf = _this->_display->RGB_to_565(0x00, 0xff, 0x00);
             int16_t cb = _this->_display->RGB_to_565(0xff, 0x00, 0x00);
-            int16_t cn = _this->_display->RGB_to_565(0x44, 0x44, 0x44);
+            int16_t cn = _this->_display->RGB_to_565(177,0,254);
+            int16_t cback = _this->_display->RGB_to_565(177,0,254);
             
-            
-
             _this->_display->write_axis(_this->_selected_axis);
             _this->_display->write_feed(_this->_selected_feed);
             _this->_display->write_emergency(_this->_has_emergency);
             _this->_display->write_x(_this->_x);
             _this->_display->write_y(_this->_y);
             _this->_display->write_z(_this->_z);
-            _this->_display->draw_arrow(162, 14, Direction::LEFT, 3, _this->_selected_axis == Axis::X && _this->_direction == -1 ? cb : cn);
-            _this->_display->draw_arrow(185, 14, Direction::RIGHT, 3, _this->_selected_axis == Axis::X && _this->_direction == 1 ? cf : cn);
-            _this->_display->draw_arrow(305, 14, Direction::UP, 3, _this->_selected_axis == Axis::Y && _this->_direction == -1 ? cb : cn);
-            _this->_display->draw_arrow(290, 14, Direction::DOWN, 3, _this->_selected_axis == Axis::Y && _this->_direction == 1 ? cf : cn);
-            _this->_display->draw_arrow(415, 14, Direction::UP, 3, _this->_selected_axis == Axis::Z && _this->_direction == -1 ? cf : cn);
-            _this->_display->draw_arrow(400, 14, Direction::DOWN, 3, _this->_selected_axis == Axis::Z && _this->_direction == 1 ? cb : cn);
+
+            if(_this->_direction == 1)
+            {
+                _this->_display->draw_arrow(185, 14, Direction::RIGHT, 3, _this->_selected_axis == Axis::X ? cf : cn, cback);
+                _this->_display->draw_arrow(305, 14, Direction::DOWN, 3, _this->_selected_axis == Axis::Y ? cb : cn, cback);
+                _this->_display->draw_arrow(415, 14, Direction::UP, 3, _this->_selected_axis == Axis::Z ? cf : cn, cback);
+            }
+            else if(_this->_direction == -1)
+            {
+                _this->_display->draw_arrow(185, 14, Direction::LEFT, 3, _this->_selected_axis == Axis::X ? cb : cn, cback);
+                _this->_display->draw_arrow(305, 14, Direction::UP, 3, _this->_selected_axis == Axis::Y ? cf : cn, cback);
+                _this->_display->draw_arrow(415, 14, Direction::DOWN, 3, _this->_selected_axis == Axis::Z ? cb : cn, cback);
+            }
+            else
+            {
+                _this->_display->draw_arrow(185, 14, Direction::LEFT, 3, cn, cback);
+                _this->_display->draw_arrow(305, 14, Direction::UP, 3, cn, cback);
+                _this->_display->draw_arrow(415, 14, Direction::UP, 3, cn, cback);
+            }
             xSemaphoreGive(_this->_display_mutex);
         }
         vTaskDelay(10);
