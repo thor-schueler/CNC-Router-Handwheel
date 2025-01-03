@@ -81,7 +81,7 @@ class Wheel
         float _selected_feed = Feed::NANO;
         bool _has_emergency = false;
         uint16_t _button_state = 0xff;
-        uint16_t _command_state = 0xff;
+        uint16_t _command_state = 0x00;
 
         int8_t _direction = 0;
         int16_t _wheel_encoded = 0x0;

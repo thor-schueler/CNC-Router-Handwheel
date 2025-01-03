@@ -65,6 +65,17 @@ class DISPLAY_GUI
 		virtual void draw_pixel(int16_t x, int16_t y, uint16_t color)=0;
 
 		/**
+		 * @brief draw image on the display
+		 * @param image - array to image containing 3 6-bit color values per pixel
+		 * @param size - the number of elements in the image (should be wxhx3)
+		 * @param x - starting x coordinate
+		 * @param y - starting y coordinate
+		 * @param w - image width
+		 * @param h - image height
+		 */
+		virtual void draw_image(const unsigned char* image, size_t size, uint16_t x, uint16_t y, uint16_t w, uint16_t h)=0;
+
+		/**
 		 * @brief Fill area from x to x+w, y to y+h
 		 * @param x - x Coordinate
 		 * @param y - y Coordinate

@@ -58,6 +58,17 @@ class DISPLAY_SPI:public DISPLAY_GUI
 		void draw_bitmap(uint8_t x,uint8_t y,uint8_t width, uint8_t height, uint8_t *BMP, uint8_t mode);
 
 		/**
+		 * @brief draw image on the display
+		 * @param image - array to image containing 3 6-bit color values per pixel
+		 * @param size - the number of elements in the image (should be wxhx3)
+		 * @param x - starting x coordinate
+		 * @param y - starting y coordinate
+		 * @param w - image width
+		 * @param h - image height
+		 */
+		void draw_image(const unsigned char* image, size_t size, uint16_t x, uint16_t y, uint16_t w, uint16_t h) override;
+
+		/**
 		 * @brief Draws a pixel of a certain color at a certain location
 		 * @param x - x coordinate of the pixel
 		 * @param y - y coordinate of the pixel

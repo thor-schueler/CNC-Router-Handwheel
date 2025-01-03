@@ -30,6 +30,7 @@ void DISPLAY_Wheel::init()
     uint32_t buffer_size = (w_area_x2-w_area_x1)*(w_area_y2-w_area_y1)*3/2;
     DISPLAY_SPI::init();
     draw_background(lcars, lcars_size);
+    draw_image(splash, splash_size, w_area_x1, w_area_y1, w_area_x2-w_area_x1, w_area_y2-w_area_y1);
     
     Logger.Info(F("Attempting allocation of screen scrolling memory buffer..."));
     Logger.Info_f(F("....Largest free block: %d"), heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
@@ -65,6 +66,11 @@ size_t DISPLAY_Wheel::print(uint8_t *st, int16_t x, int16_t y, int16_t xo, int16
  */
 void DISPLAY_Wheel::w_area_print(String s, bool newline)
 {
+    if(!w_area_initialized)
+    {
+      fill_rect(w_area_x1, w_area_y1, w_area_x2-w_area_x1, w_area_y2-w_area_y1, 0x0000);
+      w_area_initialized = true;
+    }
     set_text_color(0xffff);
     set_text_back_color(0x0);
     set_text_size(1);

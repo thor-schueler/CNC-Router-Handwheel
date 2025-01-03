@@ -264,7 +264,6 @@ void Wheel::wheel_runner(void* args)
     }
 }
 
-
 void IRAM_ATTR Wheel::handle_ems_change()
 {
     _has_emergency = digitalRead(EMS);

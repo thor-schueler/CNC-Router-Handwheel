@@ -19,7 +19,9 @@ struct Feed {
 typedef enum { UP, DOWN, LEFT, RIGHT} Direction;
 
 extern const unsigned char lcars[] PROGMEM;
+extern const unsigned char splash[] PROGMEM;
 extern const size_t lcars_size;
+extern const size_t splash_size;
 
 /**
  * @brief Implements the display for the handwheel
@@ -134,6 +136,7 @@ class DISPLAY_Wheel:public DISPLAY_SPI
 		uint16_t w_area_cursor_y;
 		uint8_t* buf1 = nullptr;
 		uint8_t* buf2 = nullptr;
+		bool w_area_initialized = false;
 };
 
 #endif
