@@ -45,7 +45,8 @@ class Wheel
          */
         Wheel();
         static std::unordered_map<uint8_t, Command_t> Commands;
-        int16_t _wheel_position = 0x0;
+        
+        void write_status_message(String format, ...);
 
 
     protected:
@@ -53,7 +54,7 @@ class Wheel
         static void on_PCF8575_input_changed();
         static void extended_GPIO_watcher(void* args);
         static void display_runner(void* args);
-        static void wheel_runner(void* args);
+        static void wheel_runner(void* args); 
         static void ems_change_runner(void* args);
 
         void IRAM_ATTR handle_axis_change(); 
@@ -87,6 +88,7 @@ class Wheel
 
         int8_t _direction = 0;
         int16_t _wheel_encoded = 0x0;
+        int16_t _wheel_position = 0x0;
         Axis _selected_axis = Axis::X;
 };
 

@@ -54,15 +54,19 @@ bool Config::Connect_Wifi()
       {
         this->wifi_connected = true;
         Logger.Info("");
-        Logger.Info(F("WiFi connected"));
+        Logger.Info_f(F("WiFi connected to %s"), ssid);
         Logger.Info_f(F("IP address: %s"), WiFi.localIP().toString().c_str());
         digitalWrite(LED_BUILTIN, LOW); 
         return true;
       }
-      Serial.print(".");
-      Serial.flush();
+      //Serial.print(".");
+      //Serial.flush();
     }
-    if (!WiFi.isConnected()) return false;
+    if (!WiFi.isConnected())
+    {
+      Logger.Error_f(F("Could not connect to WIFI %s..."), ssid);
+      return false;
+    }
   }
   return true;
 }
@@ -79,11 +83,11 @@ void Config::InitializeTime()
   while (now < UNIX_TIME_NOV_13_2017)
   {
     delay(500);
-    Serial.print(".");
-    Serial.flush();
+    //Serial.print(".");
+    //Serial.flush();
     now = time(nullptr);
   }
-  Serial.println("");
+  //Serial.println("");
   Logger.Info("Time initialized!");
 }
 

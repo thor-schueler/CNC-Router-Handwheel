@@ -56,7 +56,6 @@ void DISPLAY_Wheel::init()
  */
 size_t DISPLAY_Wheel::print(uint8_t *st, int16_t x, int16_t y, int16_t xo, int16_t yo) 
 {
-
   return DISPLAY_SPI::print(st, x, y, xo, yo);
 };
 
@@ -431,6 +430,36 @@ void DISPLAY_Wheel::write_feed(float feed)
     set_text_color(0xffffff);
     set_text_size(3);
     print_number_float(feed, 3, 90, 210, '.', 5, ' ');
+}
+
+/**
+ * @brief Writes a status message to  the display
+ * @param format - format sting for the message.
+ * @param ... Argument list for the token replacement in the format string.
+ */
+void DISPLAY_Wheel::write_status(const char* format, ...)
+{
+    va_list args; 
+    va_start(args, format); 
+
+    fill_rect(136, 112, 300, 9, RGB_to_565(127,106,0));
+    set_text_back_color(RGB_to_565(127,106,0));
+    set_text_color(0xffffff);
+    set_text_size(1);
+
+    // Determine the size of the formatted string 
+    size_t size = vsnprintf(nullptr, 0, format, args) + 1; // Add space for null terminator 
+    va_end(args); 
+    
+    // Create a buffer of the appropriate size
+    std::vector<char> buffer(size); 
+    
+    // Format the string 
+    va_start(args, format); 
+    vsnprintf(buffer.data(), size, format, args); 
+    va_end(args); 
+    Logger.Info(buffer.data());
+    //print_string(String(buffer.data()), 141, 112);  
 }
 
 /**

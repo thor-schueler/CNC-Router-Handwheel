@@ -122,18 +122,18 @@ class Config
      */
     void StopAP();
 
+    /**
+     * @brief The WIFI SSID
+     * 
+     */
+    String ssid = "";
+
   protected:
     /**
      * @brief Reads the configuration from EEPROM
      * 
      */
     void get_config();
-
-    /**
-     * @brief The WIFI SSID
-     * 
-     */
-    String ssid = "";
     
     /**
      * @brief The WIFI password

@@ -26,7 +26,7 @@
 #include "src/wheel/wheel.h"
 
 #define TELEMETRY_FREQUENCY_MILLISECS 120000
-#define AP_ENABLE_PIN 5
+#define AP_ENABLE_PIN 0
 
 /**
  * Note that there is a bug in the Hardware Serial Implementation of the ESP32 core starting with v3.0.0 up that incorrectly
@@ -64,7 +64,36 @@
 
 static Config config;
 Wheel *wheel = NULL;
+TaskHandle_t wifi_task = NULL;
 static bool has_wifi = true;
+static bool config_mode = false;
+
+void connect_WiFi(void* args)
+{
+  int wifi_try_counter = 0;
+  bool connected = false;
+
+  Logger.Info(config.ssid);
+  if(wheel != NULL) 
+    Logger.Info_f(F("Attempting to connect to Wifi %s"), config.ssid.c_str());
+    //wheel->write_status_message(F("Attempting to connect to Wifi %s"), config.ssid.c_str());
+  while (!(connected = config.Connect_Wifi()))
+  {
+    wifi_try_counter++;
+    if(wifi_try_counter > 50) break;
+  }
+  if(connected) 
+  {
+    //if(wheel != NULL) wheel->write_status_message(F("Wifi connected to %s"), config.ssid.c_str());
+    config.InitializeTime();
+  }
+  else
+  {
+    //if(wheel != NULL) wheel->write_status_message(F("Wifi failed to connect to %s"), config.ssid.c_str());
+  }
+  vTaskDelete(wifi_task);
+  wifi_task=NULL;
+}
 
 #ifdef SET_LOOP_TASK_STACK_SIZE
 SET_LOOP_TASK_STACK_SIZE(16384);
@@ -81,8 +110,6 @@ SET_LOOP_TASK_STACK_SIZE(16384);
  */
 void setup()
 {
-  int wifi_try_counter = 0;
-
   Logger.Info_f(F("Copyright 2024, Thor Schueler, Firmware Version: %s"), "0.00.00");
   Logger.Info_f(F("Loop task stack size: %i"), getArduinoLoopTaskStackSize());
   Logger.Info_f(F("Loop task stack high water mark: %i"), uxTaskGetStackHighWaterMark(NULL));
@@ -90,7 +117,11 @@ void setup()
   Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap()); 
   Logger.Info_f(F("Total PSRAM: %d"), ESP.getPsramSize()); 
   Logger.Info_f(F("Free PSRAM: %d"), ESP.getFreePsram());
+  Logger.Info(F("... Startup"));
 
+  // 
+  // Configuration Mode
+  //
   if(AP_ENABLE_PIN == 0)
   {
     config.StartAP();
@@ -102,16 +133,23 @@ void setup()
     if(digitalRead(AP_ENABLE_PIN) == HIGH)
     {
       Logger.Info_f(F("Config AP enabled. Pull GPIO%i low to disable the Config AP."), AP_ENABLE_PIN);
+      config_mode = true;
       config.StartAP();
     }
     else
     {
+      config_mode = false;
       Logger.Info_f(F("Config AP disabled. Do not pull GPIO%i low to enable the Config AP."), AP_ENABLE_PIN);  
     }
   }
-  
-  Logger.Info(F("... Startup"));
   wheel = new Wheel();
+  xTaskCreatePinnedToCore(connect_WiFi, "wificonnector", 2048, NULL, 1, &wifi_task, 1);
+  if(config_mode)
+  {
+    Logger.Info_f(F("Device is in config mode. Do not pull GPIO %i low to enter normal operations"), AP_ENABLE_PIN);
+    return;
+  }  
+  
   Logger.Info(F("... Init done"));
   Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap()); 
 }

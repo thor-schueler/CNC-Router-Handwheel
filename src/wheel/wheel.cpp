@@ -269,6 +269,14 @@ void Wheel::display_runner(void* args)
     }
 }
 
+void Wheel::write_status_message(String format, ...)
+{
+    va_list args; 
+    va_start(args, format);
+    if(this->_display) _display->write_status(format.c_str(), args);
+    va_end(args); 
+};
+
 String Wheel::format_string(const char* format, ...) 
 {
     va_list args; 

@@ -91,6 +91,13 @@ class DISPLAY_Wheel:public DISPLAY_SPI
 		void write_feed(float feed);
 
 		/**
+		 * @brief Writes a status message to  the display
+		 * @param format - format sting for the message.
+		 * @param ... Argument list for the token replacement in the format string.
+		 */
+		void write_status(const char* format, ...);
+
+		/**
 		 * @brief Writes the current x position to the display
 		 * @param x - The value for the x position to write
 		 */
