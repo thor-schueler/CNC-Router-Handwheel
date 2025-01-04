@@ -55,9 +55,10 @@ class DISPLAY_Wheel:public DISPLAY_SPI
 		/**
 		 * @brief Print a string in the working area. Advances the cursor to keep track of position
 		 * @param s - String to print
+		 * @param c - Font color to use.
 		 * @param newline - True to add a carriage return
 		 */
-		void w_area_print(String s, bool newline);
+		void w_area_print(String s, uint16_t color, bool newline);
 
 		/**
 		 * @brief Tests the display by going through a routine of drawing various

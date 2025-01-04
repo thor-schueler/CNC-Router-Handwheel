@@ -62,16 +62,17 @@ size_t DISPLAY_Wheel::print(uint8_t *st, int16_t x, int16_t y, int16_t xo, int16
 
 /**
  * @brief Print a string in the working area. Advances the cursor to keep track of position
+ * @param c - Font color to use.
  * @param s - String to print
  */
-void DISPLAY_Wheel::w_area_print(String s, bool newline)
+void DISPLAY_Wheel::w_area_print(String s, uint16_t c, bool newline)
 {
     if(!w_area_initialized)
     {
       fill_rect(w_area_x1, w_area_y1, w_area_x2-w_area_x1, w_area_y2-w_area_y1, 0x0000);
       w_area_initialized = true;
     }
-    set_text_color(0xffff);
+    set_text_color(c);
     set_text_back_color(0x0);
     set_text_size(1);
     while(w_area_y1 + w_area_cursor_y > w_area_y2 - text_size*8)

@@ -35,10 +35,10 @@ std::unordered_map<uint8_t, Command_t>Wheel::Commands = {
     {1, {"Zero XY", "G92 X0Y0 ; Zero XY", "", ""}},
     {2, {"Probe Z", "G4 P3;G21G91G38.2Z-30F80; G0Z1; G38.2Z-2F10;\n    G92 Z0; G0Z5M30 ; Probe Z", "", ""}},
     {3, {"Homing", "$H ; Homing cycle", "", ""}},
-    {4, {"Origin", "; Got to WCS origin", "", ""}},
+    {4, {"Restore Origin", "G21 G53G90G0X1.204Y18.879Z-14.3 G92X236.57Y169.408Z22.725 G0X0Y0; Rstore and go to WCS origin", "", ""}},
     {5, {"Start Spindle", "M3 S6000 ; Start the spindle", "Stop Spindle", "M5; Stop the spindle"}},
-    {6, {"Reset", "; Reset the machine", "", ""}},
-    {7, {"Unlock", "; Unlock the machine", "", ""}},
+    {6, {"Reset", String((char)0x18) + "; Reset the machine", "", ""}},
+    {7, {"Unlock", "$X; Unlock the machine", "", ""}},
     {8, {"NA", "; Command 9 not defined", "", ""}},
     {9, {"NA", "; Command 10 not defined", "", ""}},
     {10, {"NA", "; Command 11 not defined", "", ""}},
@@ -98,6 +98,7 @@ Wheel::Wheel()
     xTaskCreatePinnedToCore(extended_GPIO_watcher, "extendedGPIOWatcher", 2048, this, 1, &_extendedGPIOWatcher, 0);
     xTaskCreatePinnedToCore(display_runner, "displayRunner", 8192, this, 1, &_displayRunner, 0);
     xTaskCreatePinnedToCore(wheel_runner, "wheelRunner", 2048, this, 1, &_wheelRunner, 0);
+    xTaskCreatePinnedToCore(ems_change_runner, "emsRunner", 2048, this, 1, &_emsChangeRunner, 0);
 
     Logger.Info("Startup done");
 }
@@ -155,20 +156,72 @@ void Wheel::extended_GPIO_watcher(void* args)
                             n = Commands[i]._name_on;
                             c = Commands[i]._command_on;
                         }
-                        if (xSemaphoreTake(_this->_display_mutex, portMAX_DELAY) == pdTRUE) 
+                        _this->_button_state |= (1 << i); 
+
+                        if(!_this->_has_emergency)
                         {
-                            _this->_display->w_area_print(c, true); 
-                            _this->_display->write_command(n); 
-                            xSemaphoreGive(_this->_display_mutex);
+                            // write command to serial
+                            Serial.println(c);
+                            Serial.flush();
+                            _this->_command_state ^= (1 << i);
+
+                            // update display
+                            if (xSemaphoreTake(_this->_display_mutex, portMAX_DELAY) == pdTRUE) 
+                            {
+                                _this->_display->w_area_print(c, 0xffff, true); 
+                                _this->_display->write_command(n); 
+                                xSemaphoreGive(_this->_display_mutex);
+                            }
                         }
-                        // write command to serial
-                        Serial.println(c);
-                        Serial.flush();
-                        _this->_command_state ^= (1 << i);
-                        _this->_button_state |= (1 << i);                        
+                        else
+                        {
+                            // update display
+                            if (xSemaphoreTake(_this->_display_mutex, portMAX_DELAY) == pdTRUE) 
+                            {
+                                _this->_display->w_area_print("Handwheel in Emergency Shutdown. Release \n     EMS button to continue operations.", 0xf800 ,true); 
+                                _this->_display->write_command("Emergency Shutdown Engaged"); 
+                                xSemaphoreGive(_this->_display_mutex);
+                            }
+                        }
                     }
-                }
+                } 
             }
+        }
+    }
+}
+
+void Wheel::ems_change_runner(void* args)
+{
+    Wheel *_this = reinterpret_cast<Wheel *>(args);
+    for (;;)
+    { 
+        // Wait for the notification to come from the event handler
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        vTaskDelay(100);
+        if(digitalRead(EMS) == _this->_has_emergency) continue;
+                // I have found the debouncing of the emergency switch
+                // to be not fully reliable, so this will ensure we do 
+                // not have a bounce....
+        
+        _this->_has_emergency = !_this->_has_emergency;
+        if(_this->_has_emergency)
+        {
+            Serial.write("!");
+            Serial.write(0x18); // [Ctrl+X]
+            Serial.write("\n");
+            if (xSemaphoreTake(_this->_display_mutex, portMAX_DELAY) == pdTRUE) 
+            {
+                _this->_display->w_area_print("Emergency Shutdown has been engaged.", 0xf800 ,true); 
+                xSemaphoreGive(_this->_display_mutex);
+            }
+        }
+        else
+        {
+            if (xSemaphoreTake(_this->_display_mutex, portMAX_DELAY) == pdTRUE) 
+            {
+                _this->_display->w_area_print("Emergency shutdown has been released.", 0x07f0 ,true);
+                xSemaphoreGive(_this->_display_mutex); 
+            }       
         }
     }
 }
@@ -256,17 +309,45 @@ void Wheel::wheel_runner(void* args)
                 break;             
         }
         
-        String s = _this->format_string("G21G91%c%c%fF2000", 
+        if(!_this->_has_emergency)
+        {
+            String s = _this->format_string("G21G91%c%c%fF2000", 
                 (char)_this->_selected_axis,
                 _this->_direction == -1 ? '-': '+' ,
                 _this->_selected_feed);
-        Serial.println(s);
+            Serial.println(s);
+        }
     }
 }
 
+
 void IRAM_ATTR Wheel::handle_ems_change()
 {
-    _has_emergency = digitalRead(EMS);
+    volatile unsigned long lastDebounceTime = 0; // Last debounce time volatile 
+    int static lastState = LOW; // Last stable state of the GPIO
+    unsigned long currentTime = millis(); 
+    int currentState = digitalRead(EMS); 
+
+    // Check if enough time has passed since the last interrupt 
+    if ((currentTime - lastDebounceTime) > 100) 
+    { 
+        // Check if the state has changed 
+        if (currentState != lastState) 
+        { 
+            lastState = currentState; 
+
+            // we are not setting the _has_emergency property here
+            // as the debouncing is not entirely reliable.
+            // we therefore read the state again in the change runner.
+            
+            // Signal our job to run the axis....
+            BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+            vTaskNotifyGiveFromISR(_instance->_emsChangeRunner, &xHigherPriorityTaskWoken); 
+            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+        } 
+        // Update the last debounce time 
+        lastDebounceTime = currentTime; 
+    }
 }
 
 void IRAM_ATTR Wheel::handle_axis_change()
@@ -280,6 +361,8 @@ void IRAM_ATTR Wheel::handle_axis_change()
 void IRAM_ATTR Wheel::handle_encoder_change()
 {
     static int8_t c = 0;
+    if(_has_emergency) return;
+
     static const int8_t enconder_state_table[16] = {0, -1, 1, 0, 1, 0, 0, -1, -1, 0, 0, 1, 0, 1, -1, 0};
     int MSB = digitalRead(WHEEL_A); // Most significant bit 
     int LSB = digitalRead(WHEEL_B); // Least significant bit 

@@ -54,6 +54,7 @@ class Wheel
         static void extended_GPIO_watcher(void* args);
         static void display_runner(void* args);
         static void wheel_runner(void* args);
+        static void ems_change_runner(void* args);
 
         void IRAM_ATTR handle_axis_change(); 
         void IRAM_ATTR handle_ems_change(); 
@@ -72,6 +73,7 @@ class Wheel
         TaskHandle_t _displayRunner;
         TaskHandle_t _encoderWatcher;
         TaskHandle_t _wheelRunner;
+        TaskHandle_t _emsChangeRunner;
 
         SemaphoreHandle_t _display_mutex;
         
