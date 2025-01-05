@@ -95,7 +95,7 @@ class DISPLAY_Wheel:public DISPLAY_SPI
 		 * @param format - format sting for the message.
 		 * @param ... Argument list for the token replacement in the format string.
 		 */
-		void write_status(const char* format, ...);
+		void write_status(const String &format, ...);
 
 		/**
 		 * @brief Writes the current x position to the display
@@ -136,6 +136,7 @@ class DISPLAY_Wheel:public DISPLAY_SPI
 		void window_scroll(int16_t x, int16_t y, int16_t wid, int16_t ht, int16_t dx, int16_t dy, uint8_t *bufh, uint8_t *bufl, uint8_t increment=1);
 
 	private: 
+
 		uint16_t w_area_x1;
 		uint16_t w_area_y1;
 		uint16_t w_area_x2;

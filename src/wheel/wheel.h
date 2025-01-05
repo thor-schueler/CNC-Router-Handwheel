@@ -26,6 +26,9 @@
 
 #define TOUCH_CS 33
 
+/**
+ * @brief This structure contains information for a particular command. 
+ */
 typedef struct Command
 {
     String _name_on; 
@@ -44,32 +47,85 @@ class Wheel
          * @brief Creates a new instance of Wheel
          */
         Wheel();
+
+        /**
+         * @brief Map containing the available commands for the CNC router 
+         */
         static std::unordered_map<uint8_t, Command_t> Commands;
         
-        void write_status_message(String format, ...);
-
+        /**
+         * @brief Writes a status message to the display
+         * @param format - the format string
+         * @param ... - variable argument list  
+         */
+        void write_status_message(const String &format, ...);
 
     protected:
 
+        /**
+         * @brief Event handler handling input change events on the PCF8575 
+         */
         static void on_PCF8575_input_changed();
+
+        /**
+         * @brief Task function to process changes to the inputs on the PCF8575
+         * GPIO extender. This funtions runs an endless blocking loop, waiting for notification 
+         * from on_PCF8575_input_changed upon which it evaluates the inputs and performs
+         * the appropriate actions. 
+         * @param args - pointer to task arguments
+         */
         static void extended_GPIO_watcher(void* args);
+
+        /**
+         * @brief Task function managing the display
+         * @param args - pointer to task arguments
+         */
         static void display_runner(void* args);
+
+        /**
+         * @brief Task function managing wheel movements. This task runs an endless blocking loop,
+         * waiting for notification from handle_encoder_change upon which it will process
+         * and execute the appropriate action.
+         * @param args - pointer to task arguments 
+         */
         static void wheel_runner(void* args); 
+
+        /**
+         * @brief Task function managing changes from the EMS button. This task runs an endless 
+         * blocking loop, waiting for notification from handle_ems_change for perform the appropriate
+         * action
+         * @param args - pointer to task arguments 
+         */
         static void ems_change_runner(void* args);
 
+        /**
+         * @brief Event handler monitoring the Axus GPIOs 
+         */
         void IRAM_ATTR handle_axis_change(); 
+
+        /**
+         * @brief Event handler monitoring the Emergency Shutdown Button 
+         */
         void IRAM_ATTR handle_ems_change(); 
+
+        /**
+         * @brief Event handler watching the Quadradure encoder GPIOs.
+         */
         void IRAM_ATTR handle_encoder_change();
 
-
-
     private: 
-        static bool _key_changed;
-        String format_string(const char* format, ...);      
 
-        PCF8575 *_pcf8575 = nullptr;
+        /**
+         * @brief Formats a string, essentially a wrapper for vnsprintf
+         * @param format - format string
+         * @param ... - variable argument list 
+         */
+        String format_string(const char* format, ...);
+
+        static bool _key_changed;      
         DISPLAY_Wheel *_display = nullptr;
-
+        PCF8575 *_pcf8575 = nullptr;
+    
         TaskHandle_t _extendedGPIOWatcher;
         TaskHandle_t _displayRunner;
         TaskHandle_t _encoderWatcher;

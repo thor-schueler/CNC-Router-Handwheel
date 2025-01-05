@@ -30,6 +30,9 @@ POSSIBILITY OF SUCH DAMAGE.
 bool Wheel::_key_changed = false;
 static Wheel *_instance = nullptr;
 
+/**
+ * @brief Map containing the available commands for the CNC router 
+ */
 std::unordered_map<uint8_t, Command_t>Wheel::Commands = {
     {0, {"Zero Z", "G92 Z0 ; Zero Z Axis", "", ""}},
     {1, {"Zero XY", "G92 X0Y0 ; Zero XY", "", ""}},
@@ -103,6 +106,9 @@ Wheel::Wheel()
     Logger.Info("Startup done");
 }
 
+/**
+ * @brief Event handler handling input change events on the PCF8575 
+ */
 void Wheel::on_PCF8575_input_changed()
 {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
@@ -110,6 +116,13 @@ void Wheel::on_PCF8575_input_changed()
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
+/**
+ * @brief Task function to process changes to the inputs on the PCF8575
+ * GPIO extender. This funtions runs an endless blocking loop, waiting for notification 
+ * from on_PCF8575_input_changed upon which it evaluates the inputs and performs
+ * the appropriate actions. 
+ * @param args - pointer to task arguments
+ */
 void Wheel::extended_GPIO_watcher(void* args)
 {
     Wheel *_this = reinterpret_cast<Wheel *>(args);
@@ -190,6 +203,12 @@ void Wheel::extended_GPIO_watcher(void* args)
     }
 }
 
+/**
+ * @brief Task function managing changes from the EMS button. This task runs an endless 
+ * blocking loop, waiting for notification from handle_ems_change for perform the appropriate
+ * action
+ * @param args - pointer to task arguments 
+ */
 void Wheel::ems_change_runner(void* args)
 {
     Wheel *_this = reinterpret_cast<Wheel *>(args);
@@ -226,6 +245,10 @@ void Wheel::ems_change_runner(void* args)
     }
 }
 
+/**
+ * @brief Task function managing the display
+ * @param args - pointer to task arguments
+ */
 void Wheel::display_runner(void* args)
 {
     Wheel *_this = reinterpret_cast<Wheel *>(args);
@@ -269,14 +292,56 @@ void Wheel::display_runner(void* args)
     }
 }
 
-void Wheel::write_status_message(String format, ...)
+/**
+ * @brief Writes a status message to the display
+ * @param format - the format string
+ * @param ... - variable argument list  
+ */
+void Wheel::write_status_message(const String &format, ...)
 {
-    va_list args; 
-    va_start(args, format);
-    if(this->_display) _display->write_status(format.c_str(), args);
-    va_end(args); 
+    va_list args, copy;
+    if(this->_display != nullptr)
+    { 
+        if (xSemaphoreTake(this->_display_mutex, portMAX_DELAY) == pdTRUE) 
+        {
+            va_list args, copy; 
+            va_start(args, format); 
+            va_copy(copy, args);
+            // Determine the size of the formatted string 
+      
+            int len = vsnprintf(nullptr, 0, format.c_str(), args);
+            if(len < 0) {
+                // error condition, most likely in the format string. 
+                va_end(args);
+                va_end(copy);
+                return;
+            };
+
+            // allocate memory for the operation
+            char *buf = (char*) malloc(len+1);
+            if(buf == NULL) {
+                // memory allocation error.
+                va_end(args); 
+                va_end(copy);
+                return;
+            }            
+
+            vsnprintf(buf, len+1, format.c_str(), args); 
+            va_end(args); 
+            va_end(copy);
+
+            _display->write_status("%s", buf);
+            free(buf);
+            xSemaphoreGive(this->_display_mutex);
+        }
+    } 
 };
 
+/**
+ * @brief Formats a string, essentially a wrapper for vnsprintf
+ * @param format - format string
+ * @param ... - variable argument list 
+ */
 String Wheel::format_string(const char* format, ...) 
 {
     va_list args; 
@@ -291,10 +356,17 @@ String Wheel::format_string(const char* format, ...)
     
     // Format the string 
     va_start(args, format); 
-    vsnprintf(buffer.data(), size, format, args); va_end(args); 
+    vsnprintf(buffer.data(), size, format, args); 
+    va_end(args); 
     return String(buffer.data());
 }
 
+/**
+ * @brief Task function managing wheel movements. This task runs an endless blocking loop,
+ * waiting for notification from handle_encoder_change upon which it will process
+ * and execute the appropriate action.
+ * @param args - pointer to task arguments 
+ */
 void Wheel::wheel_runner(void* args)
 {
     Wheel *_this = reinterpret_cast<Wheel *>(args);
@@ -328,7 +400,9 @@ void Wheel::wheel_runner(void* args)
     }
 }
 
-
+/**
+ * @brief Event handler monitoring the Emergency Shutdown Button 
+ */
 void IRAM_ATTR Wheel::handle_ems_change()
 {
     volatile unsigned long lastDebounceTime = 0; // Last debounce time volatile 
@@ -358,6 +432,9 @@ void IRAM_ATTR Wheel::handle_ems_change()
     }
 }
 
+/**
+ * @brief Event handler monitoring the Axus GPIOs 
+ */
 void IRAM_ATTR Wheel::handle_axis_change()
 {    
     if(!digitalRead(AXIS_X)) _selected_axis = Axis::X;
@@ -366,6 +443,9 @@ void IRAM_ATTR Wheel::handle_axis_change()
     _direction = 0;
 }
 
+/**
+ * @brief Event handler watching the Quadradure encoder GPIOs.
+ */
 void IRAM_ATTR Wheel::handle_encoder_change()
 {
     static int8_t c = 0;

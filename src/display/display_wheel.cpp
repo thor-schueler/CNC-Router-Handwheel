@@ -388,11 +388,11 @@ void DISPLAY_Wheel::write_axis(Axis axis)
  */
 void DISPLAY_Wheel::write_command(String c)
 {
-    fill_rect(136,100, 300, 9, RGB_to_565(127,106,0));
+    fill_rect(136, 101, 300, 9, RGB_to_565(127,106,0));
     set_text_back_color(RGB_to_565(127,106,0));
     set_text_color(0xffffff);
     set_text_size(1);
-    print_string(c, 141, 100);  
+    print_string(c, 141, 101);  
 }
 
 /**
@@ -437,29 +437,44 @@ void DISPLAY_Wheel::write_feed(float feed)
  * @param format - format sting for the message.
  * @param ... Argument list for the token replacement in the format string.
  */
-void DISPLAY_Wheel::write_status(const char* format, ...)
+void DISPLAY_Wheel::write_status(const String &format, ...)
 {
+    char *buf = NULL;
+    va_list copy;
     va_list args; 
-    va_start(args, format); 
 
-    fill_rect(136, 112, 300, 9, RGB_to_565(127,106,0));
+    fill_rect(136, 114, 300, 9, RGB_to_565(127,106,0));
     set_text_back_color(RGB_to_565(127,106,0));
     set_text_color(0xffffff);
     set_text_size(1);
 
     // Determine the size of the formatted string 
-    size_t size = vsnprintf(nullptr, 0, format, args) + 1; // Add space for null terminator 
-    va_end(args); 
-    
-    // Create a buffer of the appropriate size
-    std::vector<char> buffer(size); 
-    
-    // Format the string 
     va_start(args, format); 
-    vsnprintf(buffer.data(), size, format, args); 
-    va_end(args); 
-    Logger.Info(buffer.data());
-    //print_string(String(buffer.data()), 141, 112);  
+    va_copy(copy, args);
+    int len = vsnprintf(nullptr, 0, format.c_str(), args);
+    if(len < 0) {
+      // error condition, most likely in the format string. 
+      va_end(args);
+      va_end(copy);
+      return;
+    };
+    
+    // allocate memory for the operation
+    buf = (char*) malloc(len+1);
+    if(buf == NULL) {
+      // memory allocation error.
+      va_end(args); 
+      va_end(copy);
+      return;
+    }
+
+    // Format the string  
+    vsnprintf(buf, len+1, format.c_str(), copy);
+    va_end(copy); 
+    va_end(args);
+    Serial.println(String(buf));
+    print_string(String(buf), 141, 114);
+    free(buf);  
 }
 
 /**

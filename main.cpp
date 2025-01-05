@@ -12,6 +12,7 @@
 
 #include "Arduino.h"
 #include "ESP.h"
+#include <WiFi.h>
 #include <SPI.h>
 
 // C99 libraries
@@ -68,28 +69,31 @@ TaskHandle_t wifi_task = NULL;
 static bool has_wifi = true;
 static bool config_mode = false;
 
+/**
+ * @brief Task runner for a one time task connecting to Wifi.
+ * @param args - Task arguments 
+ */
 void connect_WiFi(void* args)
 {
   int wifi_try_counter = 0;
   bool connected = false;
 
-  Logger.Info(config.ssid);
   if(wheel != NULL) 
-    Logger.Info_f(F("Attempting to connect to Wifi %s"), config.ssid.c_str());
-    //wheel->write_status_message(F("Attempting to connect to Wifi %s"), config.ssid.c_str());
-  while (!(connected = config.Connect_Wifi()))
+    wheel->write_status_message(F("Attempting to connect to Wifi %s"), config.ssid);
+  while (true)
   {
-    wifi_try_counter++;
-    if(wifi_try_counter > 50) break;
+    connected = config.Connect_Wifi();
+    if(connected) break;
+    if(wifi_try_counter++ > 5) break;
   }
   if(connected) 
   {
-    //if(wheel != NULL) wheel->write_status_message(F("Wifi connected to %s"), config.ssid.c_str());
+    if(wheel != NULL) wheel->write_status_message(F("Wifi connected to %s: %s"), config.ssid, WiFi.localIP().toString());
     config.InitializeTime();
   }
   else
   {
-    //if(wheel != NULL) wheel->write_status_message(F("Wifi failed to connect to %s"), config.ssid.c_str());
+    if(wheel != NULL) wheel->write_status_message(F("Wifi failed to connect to %s"), config.ssid);
   }
   vTaskDelete(wifi_task);
   wifi_task=NULL;
@@ -143,7 +147,7 @@ void setup()
     }
   }
   wheel = new Wheel();
-  xTaskCreatePinnedToCore(connect_WiFi, "wificonnector", 2048, NULL, 1, &wifi_task, 1);
+  xTaskCreatePinnedToCore(connect_WiFi, "wificonnector", 2048, NULL, 1, &wifi_task, 0);
   if(config_mode)
   {
     Logger.Info_f(F("Device is in config mode. Do not pull GPIO %i low to enter normal operations"), AP_ENABLE_PIN);
@@ -161,5 +165,5 @@ void setup()
  */
 void loop()
 {
-  vTaskDelay(100);
+  vTaskDelay(1000);
 }
