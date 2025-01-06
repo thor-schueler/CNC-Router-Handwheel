@@ -114,6 +114,12 @@ SET_LOOP_TASK_STACK_SIZE(16384);
  */
 void setup()
 {
+  //
+  // Initialize configuration data from EEPROM
+  //
+  config.Initialize(false);
+  Logger.SetSpeed(config.baud_rate);
+
   Logger.Info_f(F("Copyright 2024, Thor Schueler, Firmware Version: %s"), "0.00.00");
   Logger.Info_f(F("Loop task stack size: %i"), getArduinoLoopTaskStackSize());
   Logger.Info_f(F("Loop task stack high water mark: %i"), uxTaskGetStackHighWaterMark(NULL));
@@ -122,6 +128,7 @@ void setup()
   Logger.Info_f(F("Total PSRAM: %d"), ESP.getPsramSize()); 
   Logger.Info_f(F("Free PSRAM: %d"), ESP.getFreePsram());
   Logger.Info(F("... Startup"));
+  config.Print();
 
   // 
   // Configuration Mode

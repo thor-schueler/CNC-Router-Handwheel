@@ -19,7 +19,11 @@ AsyncWebServer Config::server = AsyncWebServer(80);
  * @brief Construct a new Config object
  * 
  */
-Config::Config(){}
+Config::Config()
+{
+  // initialize the commands array with 12 command slots
+  for(int i=0; i<12; i++) this->Commands.emplace(i, Command{String(i),"","",""});
+}
 
 
 #pragma region public methods
@@ -69,6 +73,15 @@ bool Config::Connect_Wifi()
     }
   }
   return true;
+}
+
+/**
+ * @brief Initialize config structures from EEPROM
+ * @param print - true to print the value, false otherwise
+ */
+void Config::Initialize(bool print)
+{
+  if(!this->has_config) this->get_config(print);
 }
 
 /**
@@ -148,7 +161,10 @@ void Config::StartAP()
     {
       const AsyncWebParameter *p = request->getParam(i);
       if (strcmp(p->name().c_str(), PARAM_INPUT_ssid) == 0) this->ssid = String(p->value());
-      if (strcmp(p->name().c_str(), PARAM_INPUT_psw) == 0) this->password = String(p->value());   
+      if (strcmp(p->name().c_str(), PARAM_INPUT_psw) == 0) this->password = String(p->value()); 
+      if (strcmp(p->name().c_str(), "BAUDRATE") == 0) this->baud_rate = (uint32_t)strtol((p->value()).c_str(), NULL, 10);
+
+
     }
     this->write_values_to_eeprom();
     this->Print();
@@ -177,13 +193,14 @@ void Config::StopAP()
 #pragma region protected methods
 /**
  * @brief Reads the configuration from EEPROM
+ * @param print - true to print the value, false otherwise
  * 
  */
-void Config::get_config()
+void Config::get_config(bool print)
 {  
   this->read_values_from_eeprom();
   this->has_config = true;
-  this->Print();
+  if(print) this->Print();
 }
 #pragma endregion
 
@@ -212,6 +229,8 @@ String Config::processor(const String &var)
   if (var == "PLEASE_RESTART" && this->values_saved == false) return F("");
   if (var == "SSID") return this->ssid;
   if (var == "PWD") return this->password;
+  if (var == "BAUDRATE") return String(this->baud_rate);
+  // use regex to match
   Logger.Info_f(F("Unknonw token: %s"), var.c_str());
   return String();
 }

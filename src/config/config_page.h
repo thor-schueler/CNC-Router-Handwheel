@@ -9,6 +9,8 @@
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <EEPROM.h>
+#include "html.h"
+#include "../wheel/wheel.h"
 
 // Utility macros and time defines
 #define NTP_SERVERS "pool.ntp.org", "time.nist.gov"
@@ -30,47 +32,6 @@
 #define LED_BUILTIN 2
 #endif
 
-/**
- * @brief HTML web page to configure the WiFi of the robot.
- * 
- */
-const char index_html[] PROGMEM = R"rawliteral(
-<!DOCTYPE HTML>
-<html>
-<head>
-  <title>Azure IoT Starter Configuration</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="author" content="Thor Schueler">
-</head>
-<body>
-  <article>
-    <header>
-      <h1>Azure IoT Camera Configuration</h1>
-    </header>
-    <section>
-      <form action="/" method="post">
-        <h3>WIFI Configuration</h3>
-        <label for="SSID">Wlan Name (SSID):</label><br><input maxlength="32" size="32" type="text" id="SSID" name="SSID" value="%SSID%"><br>
-        <label for="psw">Password:</label><br><input type="password" id="psw" maxlength="32" size="32" name="psw" value="%PWD%"><br><br>
-        <h3>Azure Device Provisioning Configuration</h3>
-        <label for="DPSNAME">DPS Endpoint:</label><br><input type="text" maxlength="64" size="64" id="DPSNAME" name="DPSNAME" value="%DPSNAME%"><br>  
-        <label for="SCOPE">DPS Scope:</label><br><input type="text" maxlength="32" size="64" id="SCOPE" name="SCOPE" value="%SCOPE%"><br>  
-        <h3>Azure IoT Hub Configuration</h3>
-        <label for="IOTHUBNAME">Iot Hub Name:</label><br><input type="text" maxlength="64" size="64" id="IOTHUBNAME" name="IOTHUBNAME" value="%IOTHUBNAME%"><br>
-        <label for="GATEWAY">Gateway Name or IP:</label><br><input type="text" maxlength="64" size="64" id="GATEWAY" name="GATEWAY" value="%GATEWAY%"><br>
-        <label for="DEVICEID">Device ID:</label><br><input type="text" maxlength="32" size="64" id="DEVICEID" name="DEVICEID" value="%DEVICEID%"><br>
-        <label for="SECRET">Device Secret:</label><br><input type="password" id="SECRET" maxlength="128" size="64" name="SECRET" value="%SECRET%"><br>
-        <hr/>
-        <input type="submit" value="Save Configuration">
-      </form> 
-      %PLEASE_RESTART%
-      %SUCCESSFULLY_CONNECTED%
-    </section>
-    <footer>
-      <p style="color:Gainsboro; font-size: x-small;">copyright 2018-2022 - Avanade.</p>
-    </footer>
-</body>
-</html>)rawliteral";
 
 /**
  * @brief This class manages settings serializing and deserialization from EEPROM, the configuration web server, 
@@ -94,6 +55,12 @@ class Config
      * @return false 
      */
     bool Connect_Wifi();
+
+    /**
+    * @brief Initialize config structures from EEPROM
+    * @param print - true to printout the config values
+    */
+    void Initialize(bool print=true);
 
     /**
      * @brief Initialize system time from time server.
@@ -128,19 +95,21 @@ class Config
      */
     String ssid = "";
 
+    uint32_t baud_rate = 115200;
+    std::unordered_map<uint8_t, Command_t> Commands;
+
   protected:
     /**
      * @brief Reads the configuration from EEPROM
-     * 
+     * @param print - true to print the value, false otherwise
      */
-    void get_config();
+    void get_config(bool print=true);
     
     /**
      * @brief The WIFI password
      * 
      */
     String password = "";
-    
 
   private:
     /**

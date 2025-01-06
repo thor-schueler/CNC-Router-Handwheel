@@ -57,6 +57,12 @@ public:
    */ 
   size_t Error_f(String format, ...);
 
+  /**
+   * @brief Sets the transmission speed
+   * @param speed - the transmission speed. 
+   */
+  void SetSpeed(uint32_t speed);
+
 private:
   /**
    * @brief Writes the current time inline to the console. 

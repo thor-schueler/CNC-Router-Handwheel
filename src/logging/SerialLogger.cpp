@@ -182,6 +182,16 @@ void SerialLogger::writeTime()
 #pragma endregion
 
 /**
+ * @brief Sets the transmission speed
+ * @param speed - the transmission speed. 
+ */
+void SerialLogger::SetSpeed(uint32_t speed)
+{
+  if(Serial) Serial.end();
+  Serial.begin(speed);
+}
+
+/**
  * @brief Global instance to be used for logging
  * 
  */
