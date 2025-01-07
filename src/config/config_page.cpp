@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <EEPROM.h>
+#include <regex>
 #include "config_page.h"
 #include "../logging/SerialLogger.h"
 
@@ -22,7 +23,7 @@ AsyncWebServer Config::server = AsyncWebServer(80);
 Config::Config()
 {
   // initialize the commands array with 12 command slots
-  for(int i=0; i<12; i++) this->Commands.emplace(i, Command{String(i),"","",""});
+  for(int i=0; i<12; i++) this->Commands.emplace(i, Command{String(i),"N " + String(i),"Alt " + String(i),"Alt N " + String(i)});
 }
 
 
@@ -156,15 +157,27 @@ void Config::StartAP()
     });
   });
   this->server.on("/", HTTP_POST, [=](AsyncWebServerRequest *request) {
+    std::regex pattern("([0-9]{1,})_CMD_?(NAME)?_?(ALT)?");
+    std::cmatch match;
     int params_amount = request->params();
     for (int i = 0; i < params_amount; i++)
     {
       const AsyncWebParameter *p = request->getParam(i);
       if (strcmp(p->name().c_str(), PARAM_INPUT_ssid) == 0) this->ssid = String(p->value());
-      if (strcmp(p->name().c_str(), PARAM_INPUT_psw) == 0) this->password = String(p->value()); 
-      if (strcmp(p->name().c_str(), "BAUDRATE") == 0) this->baud_rate = (uint32_t)strtol((p->value()).c_str(), NULL, 10);
-
-
+      else if (strcmp(p->name().c_str(), PARAM_INPUT_psw) == 0) this->password = String(p->value()); 
+      else if (strcmp(p->name().c_str(), "BAUDRATE") == 0) this->baud_rate = (uint32_t)strtol((p->value()).c_str(), NULL, 10);
+      else if (std::regex_match(p->name().c_str(), match, pattern))
+      {
+          // we have a match to a command attribute. 
+          if (match[1].matched)
+          {
+            int idx = std::stoi(match[1].str())-1;
+            if(!match[2].matched && !match[3].matched) Commands[idx]._command_on = p->value();
+            if(match[2].matched && !match[3].matched) Commands[idx]._name_on = p->value();
+            if(!match[2].matched && match[3].matched) Commands[idx]._command_off = p->value();
+            if(match[2].matched && match[3].matched) Commands[idx]._name_off = p->value();
+          }
+      }
     }
     this->write_values_to_eeprom();
     this->Print();
@@ -223,6 +236,8 @@ void Config::not_found(AsyncWebServerRequest *request)
  */
 String Config::processor(const String &var)
 {
+  std::regex pattern("([0-9]{1,})_CMD_?(NAME)?_?(ALT)?");
+  std::cmatch match;
   if (var == "SUCCESSFULLY_CONNECTED" && this->wifi_connected == true) return F("<p style=\"color:green;\">Successfully connected to WiFi!</p>");
   if (var == "SUCCESSFULLY_CONNECTED" && this->wifi_connected == false) return F("<p style=\"color:red;\">Not connected to WiFi!</p>");
   if (var == "PLEASE_RESTART" && this->values_saved == true) return F("<p>Settings saved! Please restart the controller.</p>");
@@ -230,7 +245,17 @@ String Config::processor(const String &var)
   if (var == "SSID") return this->ssid;
   if (var == "PWD") return this->password;
   if (var == "BAUDRATE") return String(this->baud_rate);
-  // use regex to match
+  if (std::regex_match(var.c_str(), match, pattern))
+  { 
+    if (match[1].matched)
+    {
+      int idx = std::stoi(match[1].str())-1;
+      if(!match[2].matched && !match[3].matched) return Commands[idx]._command_on;
+      if(match[2].matched && !match[3].matched) return Commands[idx]._name_on;
+      if(!match[2].matched && match[3].matched) return Commands[idx]._command_off;
+      if(match[2].matched && match[3].matched) return Commands[idx]._name_off;
+    }
+  }
   Logger.Info_f(F("Unknonw token: %s"), var.c_str());
   return String();
 }
