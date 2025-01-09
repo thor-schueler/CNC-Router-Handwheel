@@ -48,6 +48,46 @@ std::unordered_map<uint8_t, Command_t>Wheel::Commands = {
     {11, {"NA", "; Command 12 not defined", "", ""}}    
 };
 
+String Command_t::escape_ctrl_characters(const String& s)
+{
+    String result = ""; 
+    int length = s.length(); 
+    for (int i = 0; i < length; ++i) 
+    { 
+        if (s[i] >= 1 && s[i] <= 26) 
+        { 
+            char cc = s[i] + 64; 
+            result += "[CTRL]+" + String(cc); 
+        }
+        else 
+        { 
+            result += s[i]; 
+        } 
+    } 
+    return result;
+}
+    
+String Command_t::unescape_ctrl_characters(const String& s)
+{
+    String result = ""; 
+    int length = s.length(); 
+    for (int i = 0; i < length; ++i) 
+    { 
+        if (s[i] == '[' && s.substring(i, i + 7) == "[CTRL]+") 
+        { 
+            char ctrlChar = toupper(s[i + 7]) - 64; 
+            result += ctrlChar; 
+            i += 7;                 // Skip over "[CTRL]+" sequence 
+        } 
+        else 
+        { 
+            result += s[i]; 
+        } 
+    } 
+    return result; 
+}
+
+
 /**
  * @brief Creates a new instance of Wheel
  */

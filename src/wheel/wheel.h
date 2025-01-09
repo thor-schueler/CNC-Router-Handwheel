@@ -35,6 +35,9 @@ typedef struct Command
     String _command_on;
     String _name_off;
     String _command_off;
+
+    static String escape_ctrl_characters(const String& s);
+    static String unescape_ctrl_characters(const String& s);
 } Command_t;
 
 /**

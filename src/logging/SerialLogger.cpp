@@ -187,7 +187,11 @@ void SerialLogger::writeTime()
  */
 void SerialLogger::SetSpeed(uint32_t speed)
 {
-  if(Serial) Serial.end();
+  if(Serial)
+  {
+    Serial.flush();
+    Serial.end();
+  }
   Serial.begin(speed);
 }
 

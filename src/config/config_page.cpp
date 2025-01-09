@@ -118,6 +118,11 @@ void Config::Print()
   
   Logger.Info_f(F("SSID: %s"), this->ssid.c_str());
   Logger.Info_f(F("SSID Password: %s"), password.length() > 0 ? F("******") : F(""));
+  Logger.Info_f(F("Serial Baud Rate: %u"), baud_rate);
+  Logger.Info(F("Configured Commands:"));
+  for(int idx=0; idx<12; idx++)
+    if(Commands[idx]._name_on != "")
+      Logger.Info_f(F("     %s"), Commands[idx]._name_on.c_str());
 }
 
 /**
@@ -172,9 +177,9 @@ void Config::StartAP()
           if (match[1].matched)
           {
             int idx = std::stoi(match[1].str())-1;
-            if(!match[2].matched && !match[3].matched) Commands[idx]._command_on = p->value();
+            if(!match[2].matched && !match[3].matched) Commands[idx]._command_on = Command_t::unescape_ctrl_characters(p->value());
+            if(!match[2].matched && match[3].matched) Commands[idx]._command_off = Command_t::unescape_ctrl_characters(p->value());
             if(match[2].matched && !match[3].matched) Commands[idx]._name_on = p->value();
-            if(!match[2].matched && match[3].matched) Commands[idx]._command_off = p->value();
             if(match[2].matched && match[3].matched) Commands[idx]._name_off = p->value();
           }
       }
@@ -250,9 +255,9 @@ String Config::processor(const String &var)
     if (match[1].matched)
     {
       int idx = std::stoi(match[1].str())-1;
-      if(!match[2].matched && !match[3].matched) return Commands[idx]._command_on;
+      if(!match[2].matched && !match[3].matched) return Command_t::escape_ctrl_characters(Commands[idx]._command_on);
+      if(!match[2].matched && match[3].matched) return Command_t::escape_ctrl_characters(Commands[idx]._command_off);
       if(match[2].matched && !match[3].matched) return Commands[idx]._name_on;
-      if(!match[2].matched && match[3].matched) return Commands[idx]._command_off;
       if(match[2].matched && match[3].matched) return Commands[idx]._name_off;
     }
   }
@@ -312,6 +317,16 @@ void Config::read_values_from_eeprom()
     deserializeJson(d, s);
     this->ssid = String(d["ssid"].as<String>());
     this->password = String(d["pwd"].as<String>());
+    this->baud_rate = d["speed"];
+    int idx=0;
+    for (JsonObject command : d["commands"].as<JsonArray>()) 
+    {
+      this->Commands[idx]._command_on = String(command["c"].as<String>());
+      this->Commands[idx]._name_on = String(command["cn"].as<String>());
+      this->Commands[idx]._command_off = String(command["ca"].as<String>());
+      this->Commands[idx]._name_off = String(command["cna"].as<String>());
+      idx++;
+    }
   }
   EEPROM.end();
 }
@@ -360,13 +375,25 @@ void Config::write_values_to_eeprom()
   DynamicJsonDocument config = DynamicJsonDocument(EEPROM_SIZE);
   config["ssid"] = this->ssid;
   config["pwd"] = this->password;
-
-  char buf[EEPROM_SIZE-4];
-  serializeJson(config, buf);
+  config["speed"] = this->baud_rate;
+  JsonArray commands = config["commands"].to<JsonArray>();
+  for(int i=0; i<12; i++)
+  {
+    JsonObject command = commands.createNestedObject();
+    command["c"] = this->Commands[i]._command_on;
+    command["cn"] = this->Commands[i]._name_on;
+    command["ca"] = this->Commands[i]._command_off;
+    command["cna"] = this->Commands[i]._name_off;
+  }
+  int size = measureJson(config) + 1;
+  char *buf = (char *)malloc(size*sizeof(char));
+  serializeJson(config, buf, size);
   pos = write_string_to_eeprom(pos, buf);
+  free(buf);
 
   if(!EEPROM.commit()) Logger.Error(F("Critical - Unable to commit EEPROM changes."));
   EEPROM.end();
+
   Logger.Info(F("New value saved in flash memory"));
   values_saved = true;  
 }

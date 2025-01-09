@@ -472,7 +472,7 @@ void DISPLAY_Wheel::write_status(const String &format, ...)
     vsnprintf(buf, len+1, format.c_str(), copy);
     va_end(copy); 
     va_end(args);
-    Serial.println(String(buf));
+
     print_string(String(buf), 141, 114);
     free(buf);  
 }
