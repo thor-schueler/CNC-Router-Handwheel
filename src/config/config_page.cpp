@@ -162,9 +162,16 @@ void Config::StartAP()
     });
   });
   this->server.on("/", HTTP_POST, [=](AsyncWebServerRequest *request) {
-    std::regex pattern("([0-9]{1,})_CMD_?(NAME)?_?(ALT)?");
+    std::regex pattern("([0-9]{1,})_CMD_?(NAME)?_?(ALT)?(0X)?(0Y)?(0Z)?");
     std::cmatch match;
+    int baudrate = this->baud_rate;
     int params_amount = request->params();
+    for(auto &p : Commands)
+    {
+      p.second._zero_x = false;
+      p.second._zero_y = false;
+      p.second._zero_z = false;
+    }
     for (int i = 0; i < params_amount; i++)
     {
       const AsyncWebParameter *p = request->getParam(i);
@@ -177,18 +184,34 @@ void Config::StartAP()
           if (match[1].matched)
           {
             int idx = std::stoi(match[1].str())-1;
-            if(!match[2].matched && !match[3].matched) Commands[idx]._command_on = Command_t::unescape_ctrl_characters(p->value());
+            if(!match[2].matched && !match[3].matched && !match[4].matched && !match[5].matched && !match[6].matched) Commands[idx]._command_on = Command_t::unescape_ctrl_characters(p->value());
             if(!match[2].matched && match[3].matched) Commands[idx]._command_off = Command_t::unescape_ctrl_characters(p->value());
             if(match[2].matched && !match[3].matched) Commands[idx]._name_on = p->value();
             if(match[2].matched && match[3].matched) Commands[idx]._name_off = p->value();
+            Commands[idx]._zero_x |= match[4].matched;  
+            Commands[idx]._zero_y |= match[5].matched;  
+            Commands[idx]._zero_z |= match[6].matched; 
           }
       }
     }
+    for(auto &p : this->Commands)
+    {
+      int idx = p.first;
+      Wheel::Commands[idx]._command_on = p.second._command_on;
+      Wheel::Commands[idx]._name_on = p.second._name_on;
+      Wheel::Commands[idx]._command_off = p.second._command_off;
+      Wheel::Commands[idx]._name_off = p.second._name_off;
+      Wheel::Commands[idx]._zero_x = p.second._zero_x;
+      Wheel::Commands[idx]._zero_y = p.second._zero_y;
+      Wheel::Commands[idx]._zero_z = p.second._zero_z; 
+    }
+    Logger.Info(F("Command condiguration syncronized with wheel controller."));
     this->write_values_to_eeprom();
     this->Print();
     request->send_P(200, "text/html", index_html, [=](const String &var){
       return this->processor(var);
     });
+    if(this->baud_rate != baudrate) ESP.restart();
   });
   server.begin();
 }
@@ -241,7 +264,7 @@ void Config::not_found(AsyncWebServerRequest *request)
  */
 String Config::processor(const String &var)
 {
-  std::regex pattern("([0-9]{1,})_CMD_?(NAME)?_?(ALT)?");
+  std::regex pattern("([0-9]{1,})_CMD_?(NAME)?_?(ALT)?(0X)?(0Y)?(0Z)?");
   std::cmatch match;
   if (var == "SUCCESSFULLY_CONNECTED" && this->wifi_connected == true) return F("<p style=\"color:green;\">Successfully connected to WiFi!</p>");
   if (var == "SUCCESSFULLY_CONNECTED" && this->wifi_connected == false) return F("<p style=\"color:red;\">Not connected to WiFi!</p>");
@@ -255,10 +278,13 @@ String Config::processor(const String &var)
     if (match[1].matched)
     {
       int idx = std::stoi(match[1].str())-1;
-      if(!match[2].matched && !match[3].matched) return Command_t::escape_ctrl_characters(Commands[idx]._command_on);
+      if(!match[2].matched && !match[3].matched &&!match[4].matched && !match[5].matched && !match[6].matched) return Command_t::escape_ctrl_characters(Commands[idx]._command_on);
       if(!match[2].matched && match[3].matched) return Command_t::escape_ctrl_characters(Commands[idx]._command_off);
       if(match[2].matched && !match[3].matched) return Commands[idx]._name_on;
       if(match[2].matched && match[3].matched) return Commands[idx]._name_off;
+      if(match[4].matched) return Commands[idx]._zero_x ? "checked" : "";
+      if(match[5].matched) return Commands[idx]._zero_y ? "checked" : "";
+      if(match[6].matched) return Commands[idx]._zero_z ? "checked" : "";
     }
   }
   Logger.Info_f(F("Unknonw token: %s"), var.c_str());
@@ -325,8 +351,23 @@ void Config::read_values_from_eeprom()
       this->Commands[idx]._name_on = String(command["cn"].as<String>());
       this->Commands[idx]._command_off = String(command["ca"].as<String>());
       this->Commands[idx]._name_off = String(command["cna"].as<String>());
+      this->Commands[idx]._zero_x = command["zX"].as<bool>();
+      this->Commands[idx]._zero_y = command["zY"].as<bool>();
+      this->Commands[idx]._zero_z = command["zZ"].as<bool>();
       idx++;
     }
+    for(auto &p : this->Commands)
+    {
+      int idx = p.first;
+      Wheel::Commands[idx]._command_on = p.second._command_on;
+      Wheel::Commands[idx]._name_on = p.second._name_on;
+      Wheel::Commands[idx]._command_off = p.second._command_off;
+      Wheel::Commands[idx]._name_off = p.second._name_off;
+      Wheel::Commands[idx]._zero_x = p.second._zero_x;
+      Wheel::Commands[idx]._zero_y = p.second._zero_y;
+      Wheel::Commands[idx]._zero_z = p.second._zero_z; 
+    }
+    Logger.Info(F("Command condiguration syncronized with wheel controller."));
   }
   EEPROM.end();
 }
@@ -384,6 +425,9 @@ void Config::write_values_to_eeprom()
     command["cn"] = this->Commands[i]._name_on;
     command["ca"] = this->Commands[i]._command_off;
     command["cna"] = this->Commands[i]._name_off;
+    command["zX"] = this->Commands[i]._zero_x;
+    command["zY"] = this->Commands[i]._zero_y;
+    command["zZ"] = this->Commands[i]._zero_z;
   }
   int size = measureJson(config) + 1;
   char *buf = (char *)malloc(size*sizeof(char));

@@ -13,6 +13,7 @@
 #define RD_IDLE     0
 #define WR_ACTIVE   0
 #define WR_IDLE     0
+#define SPI_BUS_FREQUENCY 40000000
 
 /** 
  * Pin usage as follow:

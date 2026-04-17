@@ -36,7 +36,7 @@ DISPLAY_SPI::DISPLAY_SPI()
 
 	spi = new SPIClass(HSPI);
   	spi->begin();
-	spi->setFrequency(20000000);
+	spi->setFrequency(SPI_BUS_FREQUENCY);
   	spi->setBitOrder(MSBFIRST);
 	spi->setDataMode(SPI_MODE0);
 

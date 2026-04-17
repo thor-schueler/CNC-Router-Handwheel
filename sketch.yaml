@@ -1,0 +1,9 @@
+profiles:
+  esp32:
+    notes: Firmware for CNC Router Handwheel
+    fqbn: esp32:esp32:esp32
+    libraries:
+      - "Async TCP (3.4.10)"
+      - "ESP Async WebServer (3.10.4)"
+      - "PCF8575 (2.0.1)"
+      - "ArduinoJson (6.21.0)"

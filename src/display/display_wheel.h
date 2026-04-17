@@ -9,7 +9,7 @@
 
 #define ARROW_MIDDLE_ADJ(i) (uint8_t)((i <= 5) ? std::ceil(static_cast<float>(i) / 2) : std::floor(static_cast<float>(i - 1) / 3))
 
-typedef enum { X=88, Y=89, Z=90 } Axis;
+typedef enum { X=88, Y=89, Z=90, NA=255 } Axis;
 struct Feed { 
 	static constexpr float NANO = 0.001f; 
 	static constexpr float MICRO = 0.01f; 

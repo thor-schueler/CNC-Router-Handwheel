@@ -34,18 +34,18 @@ static Wheel *_instance = nullptr;
  * @brief Map containing the available commands for the CNC router 
  */
 std::unordered_map<uint8_t, Command_t>Wheel::Commands = {
-    {0, {"Zero Z", "G92 Z0 ; Zero Z Axis", "", ""}},
-    {1, {"Zero XY", "G92 X0Y0 ; Zero XY", "", ""}},
-    {2, {"Probe Z", "G4 P3;G21G91G38.2Z-30F80; G0Z1; G38.2Z-2F10;\n    G92 Z0; G0Z5M30 ; Probe Z", "", ""}},
-    {3, {"Homing", "$H ; Homing cycle", "", ""}},
-    {4, {"Restore Origin", "G21 G53G90G0X1.204Y18.879Z-14.3 G92X236.57Y169.408Z22.725 G0X0Y0; Rstore and go to WCS origin", "", ""}},
-    {5, {"Start Spindle", "M3 S6000 ; Start the spindle", "Stop Spindle", "M5; Stop the spindle"}},
-    {6, {"Reset", String((char)0x18) + "; Reset the machine", "", ""}},
-    {7, {"Unlock", "$X; Unlock the machine", "", ""}},
-    {8, {"NA", "; Command 9 not defined", "", ""}},
-    {9, {"NA", "; Command 10 not defined", "", ""}},
-    {10, {"NA", "; Command 11 not defined", "", ""}},
-    {11, {"NA", "; Command 12 not defined", "", ""}}    
+    {0, {"Zero Z", "G92 Z0 ; Zero Z Axis", "", "", false, false, true}},
+    {1, {"Zero XY", "G92 X0Y0 ; Zero XY", "", "", true, true, false}},
+    {2, {"Probe Z", "G4 P3;G21G91G38.2Z-30F80; G0Z1; G38.2Z-2F10;\n    G92 Z0; G0Z5M30 ; Probe Z", "", "", false, false, false}},
+    {3, {"Homing", "$H ; Homing cycle", "", "", false, false, false}},
+    {4, {"Restore Origin", "G21 G53G90G0X1.204Y18.879Z-14.3 G92X236.57Y169.408Z22.725 G0X0Y0; Rstore and go to WCS origin", "", "", true, true, false}},
+    {5, {"Start Spindle", "M3 S6000 ; Start the spindle", "Stop Spindle", "M5; Stop the spindle", false, false, false}},
+    {6, {"Reset", String((char)0x18) + "; Reset the machine", "", "", false, false, false}},
+    {7, {"Unlock", "$X; Unlock the machine", "", "", false, false, false}},
+    {8, {"NA", "; Command 9 not defined", "", "", false, false, false}},
+    {9, {"NA", "; Command 10 not defined", "", "", false, false, false}},
+    {10, {"NA", "; Command 11 not defined", "", "", false, false, false}},
+    {11, {"NA", "; Command 12 not defined", "", "", false, false, false}}    
 };
 
 String Command_t::escape_ctrl_characters(const String& s)
@@ -218,6 +218,10 @@ void Wheel::extended_GPIO_watcher(void* args)
                             Serial.flush();
                             _this->_command_state ^= (1 << i);
 
+                            if(Commands[i]._zero_x) _this->_x = 0;
+                            if(Commands[i]._zero_y) _this->_y = 0;  
+                            if(Commands[i]._zero_z) _this->_z = 0;
+
                             // update display
                             if (xSemaphoreTake(_this->_display_mutex, portMAX_DELAY) == pdTRUE) 
                             {
@@ -292,6 +296,11 @@ void Wheel::ems_change_runner(void* args)
 void Wheel::display_runner(void* args)
 {
     Wheel *_this = reinterpret_cast<Wheel *>(args);
+    int8_t old_direction = 255;
+    Axis old_axis = Axis::NA;
+    float old_feed = -1;
+    float old_x = -1, old_y = -1, old_z = -1;
+    bool old_emergency = false;
     for (;;) 
     { 
         if (xSemaphoreTake(_this->_display_mutex, portMAX_DELAY) == pdTRUE) 
@@ -301,34 +310,38 @@ void Wheel::display_runner(void* args)
             int16_t cn = _this->_display->RGB_to_565(177,0,254);
             int16_t cback = _this->_display->RGB_to_565(177,0,254);
             
-            _this->_display->write_axis(_this->_selected_axis);
-            _this->_display->write_feed(_this->_selected_feed);
-            _this->_display->write_emergency(_this->_has_emergency);
-            _this->_display->write_x(_this->_x);
-            _this->_display->write_y(_this->_y);
-            _this->_display->write_z(_this->_z);
+            if(_this->_selected_axis != old_axis) { _this->_display->write_axis(_this->_selected_axis); old_axis = _this->_selected_axis; }
+            if(_this->_selected_feed != old_feed) { _this->_display->write_feed(_this->_selected_feed); old_feed = _this->_selected_feed; }
+            if(_this->_has_emergency != old_emergency) { _this->_display->write_emergency(_this->_has_emergency); old_emergency = _this->_has_emergency; }
+            if(_this->_x != old_x) { _this->_display->write_x(_this->_x); old_x = _this->_x; }
+            if(_this->_y != old_y) { _this->_display->write_y(_this->_y); old_y = _this->_y; }
+            if(_this->_z != old_z) { _this->_display->write_z(_this->_z); old_z = _this->_z; }
 
-            if(_this->_direction == 1)
-            {
-                _this->_display->draw_arrow(185, 14, Direction::RIGHT, 3, _this->_selected_axis == Axis::X ? cf : cn, cback);
-                _this->_display->draw_arrow(305, 14, Direction::DOWN, 3, _this->_selected_axis == Axis::Y ? cb : cn, cback);
-                _this->_display->draw_arrow(415, 14, Direction::UP, 3, _this->_selected_axis == Axis::Z ? cf : cn, cback);
-            }
-            else if(_this->_direction == -1)
-            {
-                _this->_display->draw_arrow(185, 14, Direction::LEFT, 3, _this->_selected_axis == Axis::X ? cb : cn, cback);
-                _this->_display->draw_arrow(305, 14, Direction::UP, 3, _this->_selected_axis == Axis::Y ? cf : cn, cback);
-                _this->_display->draw_arrow(415, 14, Direction::DOWN, 3, _this->_selected_axis == Axis::Z ? cb : cn, cback);
-            }
-            else
-            {
-                _this->_display->draw_arrow(185, 14, Direction::LEFT, 3, cn, cback);
-                _this->_display->draw_arrow(305, 14, Direction::UP, 3, cn, cback);
-                _this->_display->draw_arrow(415, 14, Direction::UP, 3, cn, cback);
+            if(_this->_direction != old_direction)
+            {  
+                if(_this->_direction == 1)
+                {
+                    _this->_display->draw_arrow(185, 14, Direction::RIGHT, 3, _this->_selected_axis == Axis::X ? cf : cn, cback);
+                    _this->_display->draw_arrow(305, 14, Direction::DOWN, 3, _this->_selected_axis == Axis::Y ? cb : cn, cback);
+                    _this->_display->draw_arrow(415, 14, Direction::UP, 3, _this->_selected_axis == Axis::Z ? cf : cn, cback);
+                }
+                else if(_this->_direction == -1)
+                {
+                    _this->_display->draw_arrow(185, 14, Direction::LEFT, 3, _this->_selected_axis == Axis::X ? cb : cn, cback);
+                    _this->_display->draw_arrow(305, 14, Direction::UP, 3, _this->_selected_axis == Axis::Y ? cf : cn, cback);
+                    _this->_display->draw_arrow(415, 14, Direction::DOWN, 3, _this->_selected_axis == Axis::Z ? cb : cn, cback);
+                }
+                else
+                {
+                    _this->_display->draw_arrow(185, 14, Direction::LEFT, 3, cn, cback);
+                    _this->_display->draw_arrow(305, 14, Direction::UP, 3, cn, cback);
+                    _this->_display->draw_arrow(415, 14, Direction::UP, 3, cn, cback);
+                }
+                old_direction = _this->_direction;
             }
             xSemaphoreGive(_this->_display_mutex);
         }
-        vTaskDelay(10);
+        vTaskDelay(50);
     }
 }
 
