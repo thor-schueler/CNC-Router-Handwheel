@@ -118,8 +118,12 @@ void setup()
   // Initialize configuration data from EEPROM
   //
   config.Initialize(false);
+  Command_t::merge(&config.Commands, &Wheel::Commands);
   Logger.SetSpeed(config.baud_rate);
 
+  //
+  // Startup
+  //
   Logger.Info_f(F("Copyright 2024, Thor Schueler, Firmware Version: %s"), "0.00.00");
   Logger.Info_f(F("Loop task stack size: %i"), getArduinoLoopTaskStackSize());
   Logger.Info_f(F("Loop task stack high water mark: %i"), uxTaskGetStackHighWaterMark(NULL));

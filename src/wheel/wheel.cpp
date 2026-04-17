@@ -35,10 +35,10 @@ static Wheel *_instance = nullptr;
  */
 std::unordered_map<uint8_t, Command_t>Wheel::Commands = {
     {0, {"Zero Z", "G92 Z0 ; Zero Z Axis", "", "", false, false, true}},
-    {1, {"Zero XY", "G92 X0Y0 ; Zero XY", "", "", true, true, false}},
-    {2, {"Probe Z", "G4 P3;G21G91G38.2Z-30F80; G0Z1; G38.2Z-2F10;\n    G92 Z0; G0Z5M30 ; Probe Z", "", "", false, false, false}},
+    {1, {"Zero XY", "G92.1" + String((char)0x0A) + "G10 L20 P1 X0Y0" + String((char)0x0A) + "G92 X0Y0 G54" + String((char)0x0A) + "    ; Zero XY and set WCS 54 origin " + String((char)0x0A) + "    ; Switch to WCS 54", "", "", true, true, false}},
+    {2, {"Probe Z", "G4P3 G21G91G38.2Z-30F80" + String((char)0x0A) + "G0Z1" + String((char)0x0A) + "G38.2Z-2F10" + String((char)0x0A) + "G92 Z0" + String((char)0x0A) + "G0Z5M30" + String((char)0x0A) + "    ; Probe Z", "", "", false, false, true}},  
     {3, {"Homing", "$H ; Homing cycle", "", "", false, false, false}},
-    {4, {"Restore Origin", "G21 G53G90G0X1.204Y18.879Z-14.3 G92X236.57Y169.408Z22.725 G0X0Y0; Rstore and go to WCS origin", "", "", true, true, false}},
+    {4, {"Restore Origin", "G54 G90 G0X0Y0" + String((char)0x0A) + "    ; Restore and go to 54 WCS origin", "", "", true, true, false}},
     {5, {"Start Spindle", "M3 S6000 ; Start the spindle", "Stop Spindle", "M5; Stop the spindle", false, false, false}},
     {6, {"Reset", String((char)0x18) + "; Reset the machine", "", "", false, false, false}},
     {7, {"Unlock", "$X; Unlock the machine", "", "", false, false, false}},
@@ -48,6 +48,12 @@ std::unordered_map<uint8_t, Command_t>Wheel::Commands = {
     {11, {"NA", "; Command 12 not defined", "", "", false, false, false}}    
 };
 
+/**
+ * @brief Escapes the control characters in the _command_[on|off] strings
+ * and replaces them with a [CTRL]+? representation where ? is equal to 
+ * the control character plus 64. 
+ * @param s - the string to process.
+ */
 String Command_t::escape_ctrl_characters(const String& s)
 {
     String result = ""; 
@@ -67,6 +73,11 @@ String Command_t::escape_ctrl_characters(const String& s)
     return result;
 }
     
+/**
+ * @brief Unescapes the [CTRL]+? sequence with the  control characters 
+ * by converting the ? character to upper case and then substracting 64.  
+ * @param s - the string to process. 
+ */
 String Command_t::unescape_ctrl_characters(const String& s)
 {
     String result = ""; 
@@ -87,6 +98,60 @@ String Command_t::unescape_ctrl_characters(const String& s)
     return result; 
 }
 
+/**
+ * @brief Merges two Command objects 
+ * @param dest - pointer to the destination that will contain the merged commands
+ * @param merge - pointer to the command to merge into dest. 
+ * @param force - true to force copying all fields of merge into dest, essentially overwriting dest.
+ * @remarks The merge will look at the Command objects field by field. If dest does
+ * have a empty string for a field, the value of the merge field will be copied into
+ * it. If the field has a value already, it remains unchangd. 
+ */
+void Command::merge(Command *dest, Command *merge, bool force)
+{
+    if(force)
+    {
+        dest->_name_on = String(merge->_name_on);
+        dest->_name_off = String(merge->_name_off);
+        dest->_command_on = String(merge->_command_on);
+        dest->_command_off = String(merge->_command_off);
+        dest->_zero_x = merge->_zero_x;
+        dest->_zero_y = merge->_zero_y; 
+        dest->_zero_z = merge->_zero_z;
+    }  
+    else
+    {
+        if(dest->_name_on == "" && merge->_name_on !="") dest->_name_on = String(merge->_name_on);
+        if(dest->_name_off == "" && merge->_name_off !="") dest->_name_off = String(merge->_name_off);
+        if(dest->_command_on == "" && merge->_command_on !="") dest->_command_on = String(merge->_command_on);
+        if(dest->_command_off == "" && merge->_command_off !="") dest->_command_off = String(merge->_command_off);
+        dest->_zero_x |= merge->_zero_x;
+        dest->_zero_y |= merge->_zero_y;
+        dest->_zero_z |= merge->_zero_z;  
+    }
+}
+
+/**
+ * @brief Merges two Command maps 
+ * @param dest - pointer to the destination that will contain the merged commands
+ * @param merge - pointer to the command to merge into dest. 
+ * @param force - true to force copying all fields of merge into dest, essentially overwriting dest.
+ * @remarks The merge will look at the Command objects field by field. If dest does
+ * have a empty string for a field, the value of the merge field will be copied into
+ * it. If the field has a value already, it remains unchangd. The dimension of the two 
+ * maps must be the same...
+ */
+void Command::merge(std::unordered_map<uint8_t, Command_t> *dest, std::unordered_map<uint8_t, Command_t> *merge, bool force)
+{
+    if(dest->size() == merge->size())
+    {
+        for(int idx=0; idx<dest->size(); idx++)
+        {
+            Command_t::merge(&(dest->at(idx)), &(merge->at(idx)), force);
+        }
+    }
+    Logger.Info("Merged command configuration");
+}
 
 /**
  * @brief Creates a new instance of Wheel
@@ -151,9 +216,21 @@ Wheel::Wheel()
  */
 void Wheel::on_PCF8575_input_changed()
 {
+
+    // debounce check to prevent double button presses. The PCF8575 can be a bit noisy and this has been 
+    // found to be a reliable way to prevent it.
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-    vTaskNotifyGiveFromISR(_instance->_extendedGPIOWatcher, &xHigherPriorityTaskWoken); 
-    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+    volatile uint32_t lastDebounceTime = 0; // Last debounce time volatile 
+    uint32_t currentTime = millis(); 
+
+    if ((currentTime - lastDebounceTime) > 100) 
+    {     
+        vTaskNotifyGiveFromISR(_instance->_extendedGPIOWatcher, &xHigherPriorityTaskWoken); 
+        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+                
+        // Update the last debounce time 
+        lastDebounceTime = currentTime; 
+    }
 }
 
 /**

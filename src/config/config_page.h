@@ -139,8 +139,9 @@ class Config
     /**
      * @brief Reads configuration values from EEPROM
      * 
+     * @param print -determines if to print messages. Set to false to supress messaging.
      */
-    void read_values_from_eeprom();
+    void read_values_from_eeprom(bool print=true);
     
     /**
      * @brief Writes a string to EEPROM

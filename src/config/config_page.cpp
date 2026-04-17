@@ -23,7 +23,7 @@ AsyncWebServer Config::server = AsyncWebServer(80);
 Config::Config()
 {
   // initialize the commands array with 12 command slots
-  for(int i=0; i<12; i++) this->Commands.emplace(i, Command{String(i),"N " + String(i),"Alt " + String(i),"Alt N " + String(i)});
+  for(int i=0; i<12; i++) this->Commands.emplace(i, Command{"","","","",false,false,false});
 }
 
 
@@ -194,18 +194,7 @@ void Config::StartAP()
           }
       }
     }
-    for(auto &p : this->Commands)
-    {
-      int idx = p.first;
-      Wheel::Commands[idx]._command_on = p.second._command_on;
-      Wheel::Commands[idx]._name_on = p.second._name_on;
-      Wheel::Commands[idx]._command_off = p.second._command_off;
-      Wheel::Commands[idx]._name_off = p.second._name_off;
-      Wheel::Commands[idx]._zero_x = p.second._zero_x;
-      Wheel::Commands[idx]._zero_y = p.second._zero_y;
-      Wheel::Commands[idx]._zero_z = p.second._zero_z; 
-    }
-    Logger.Info(F("Command condiguration syncronized with wheel controller."));
+    Command_t::merge(&Wheel::Commands, &this->Commands, true);
     this->write_values_to_eeprom();
     this->Print();
     request->send_P(200, "text/html", index_html, [=](const String &var){
@@ -239,7 +228,7 @@ void Config::StopAP()
  */
 void Config::get_config(bool print)
 {  
-  this->read_values_from_eeprom();
+  this->read_values_from_eeprom(print);
   this->has_config = true;
   if(print) this->Print();
 }
@@ -323,13 +312,17 @@ String Config::read_string_from_eeprom(int addrOffset, int *pos)
 /**
  * @brief Reads configuration values from EEPROM
  * 
+ * @param print -determines if to print messages. Set to false to supress messaging.
  */
-void Config::read_values_from_eeprom()
+void Config::read_values_from_eeprom(bool print)
 {
   // the first two eeprom bytes simply contain the string OK. That is to indicate that the eeprom partition has been written at least once. 
   // this is followed by a byte containin the length of the serialized JSON config string followed by hte string itself.  
   int pos = 0;
-  if(EEPROM.begin(EEPROM_SIZE)) Logger.Info(F("EEPROM initialized."));
+  if(EEPROM.begin(EEPROM_SIZE))
+  {
+    if(print) Logger.Info(F("EEPROM initialized."));
+  }
   else 
   {
     Logger.Error(F("Critital - Unable to initialize EEPROM."));
@@ -337,7 +330,7 @@ void Config::read_values_from_eeprom()
   }
   if(read_string_from_eeprom(pos, &pos) == "OK")
   {
-    Logger.Info(F("Found valid EEPROM block"));
+    if(print)Logger.Info(F("Found valid EEPROM block"));
     String s = read_string_from_eeprom(pos, &pos);
     DynamicJsonDocument d = DynamicJsonDocument(EEPROM_SIZE);
     deserializeJson(d, s);
@@ -356,18 +349,8 @@ void Config::read_values_from_eeprom()
       this->Commands[idx]._zero_z = command["zZ"].as<bool>();
       idx++;
     }
-    for(auto &p : this->Commands)
-    {
-      int idx = p.first;
-      Wheel::Commands[idx]._command_on = p.second._command_on;
-      Wheel::Commands[idx]._name_on = p.second._name_on;
-      Wheel::Commands[idx]._command_off = p.second._command_off;
-      Wheel::Commands[idx]._name_off = p.second._name_off;
-      Wheel::Commands[idx]._zero_x = p.second._zero_x;
-      Wheel::Commands[idx]._zero_y = p.second._zero_y;
-      Wheel::Commands[idx]._zero_z = p.second._zero_z; 
-    }
-    Logger.Info(F("Command condiguration syncronized with wheel controller."));
+    Command_t::merge(&this->Commands, &Wheel::Commands);
+    Command_t::merge(&Wheel::Commands, &this->Commands, true);
   }
   EEPROM.end();
 }

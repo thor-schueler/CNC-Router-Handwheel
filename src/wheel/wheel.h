@@ -39,8 +39,44 @@ typedef struct Command
     bool _zero_y;
     bool _zero_z;
 
+    /**
+     * @brief Escapes the control characters in the _command_[on|off] strings
+     * and replaces them with a [CTRL]+? representation where ? is equal to 
+     * the control character plus 64. 
+     * @param s - the string to process.
+     */
     static String escape_ctrl_characters(const String& s);
+
+    /**
+     * @brief Unescapes the [CTRL]+? sequence with the  control characters 
+     * by converting the ? character to upper case and then substracting 64.  
+     * @param s - the string to process. 
+    */
     static String unescape_ctrl_characters(const String& s);
+
+    /**
+     * @brief Merges two Command objects 
+     * @param dest - pointer to the destination that will contain the merged commands
+     * @param merge - pointer to the command to merge into dest. 
+     * @param force - true to force copying all fields of merge into dest, essentially overwriting dest.
+     * @remarks The merge will look at the Command objects field by field. If dest does
+     * have a empty string for a field, the value of the merge field will be copied into
+     * it. If the field has a value already, it remains unchangd. 
+    */
+    static void merge(Command *dest, Command *merge, bool force=false);
+
+    /**
+     * @brief Merges two Command maps 
+     * @param dest - pointer to the destination that will contain the merged commands
+     * @param merge - pointer to the command to merge into dest. 
+     * @param force - true to force copying all fields of merge into dest, essentially overwriting dest.
+     * @remarks The merge will look at the Command objects field by field. If dest does
+     * have a empty string for a field, the value of the merge field will be copied into
+     * it. If the field has a value already, it remains unchangd. The dimension of the two 
+     * maps must be the same...
+    */
+    static void merge(std::unordered_map<uint8_t, Command> *dest, std::unordered_map<uint8_t, Command> *merge, bool force=false);
+
 } Command_t;
 
 /**
