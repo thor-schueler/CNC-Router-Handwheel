@@ -205,7 +205,7 @@ Wheel::Wheel()
     Logger.Info("....Create various tasks");
     xTaskCreatePinnedToCore(extended_GPIO_watcher, "extendedGPIOWatcher", 2048, this, 1, &_extendedGPIOWatcher, 0);
     xTaskCreatePinnedToCore(display_runner, "displayRunner", 8192, this, 1, &_displayRunner, 0);
-    xTaskCreatePinnedToCore(wheel_runner, "wheelRunner", 2048, this, 1, &_wheelRunner, 0);
+    xTaskCreatePinnedToCore(wheel_runner, "wheelRunner", 8192, this, 1, &_wheelRunner, 0);
     xTaskCreatePinnedToCore(ems_change_runner, "emsRunner", 2048, this, 1, &_emsChangeRunner, 0);
 
     Logger.Info("Startup done");
