@@ -538,9 +538,8 @@ uint32_t DISPLAY_SPI::read_GRAM(int16_t x, int16_t y, uint16_t *block, int16_t w
  */
 uint32_t DISPLAY_SPI::read_GRAM_RGB(int16_t x, int16_t y, uint8_t *block, int16_t w, int16_t h)
 {
-	uint32_t ret;
-    uint32_t n = (uint32_t)w * (uint32_t)h * 3;
-	uint32_t cnt = 0;
+	uint32_t npix = (uint32_t)w * (uint32_t)h;
+    uint32_t n = npix * (R24BIT == 1 ? 3 : 2);
     uint8_t r;
 
     set_addr_window(x, y, x+w-1, y+h-1);
@@ -548,30 +547,34 @@ uint32_t DISPLAY_SPI::read_GRAM_RGB(int16_t x, int16_t y, uint8_t *block, int16_
 	writeCmd16(0x2E);
     setReadDir();
 
+	// Use a safer read frequency (e.g. 10–20 MHz)
+    spi->setFrequency(SPI_BUS_FREQUENCY/2);
 	r=spi->transfer(0x00);  // first byte just contains some status info... discard...
-    if(R24BIT == 1)
-	{
-		for (uint32_t i = 0; i < n; i++) 
-		{ 
-			block[i] = (spi->transfer(0x00) & 0x7F) << 1;
-			cnt++;
-		}
-	}
-	else
-	{
-		for (uint32_t i = 0; i < n; i+=3) 
-		{ 
-			block[i] = (uint8_t)((((ret >> 11) & 0x1F) * 63)/31);
-			block[i+1] = (uint8_t)((ret >> 5) & 0x3F);
-			block[i+2] = (uint8_t)(((ret & 0x1F) * 63) / 31);
-				// this is likely incorrect and needs to be empircally reviewed
-				// to make sure that there is no internal mucking up the colors ;)
-			cnt+=3;
-		}
-	}
+	spi->transferBytes(nullptr, block, n);
+	spi->setFrequency(SPI_BUS_FREQUENCY);
     CS_IDLE;
     setWriteDir();
-	return cnt;
+
+	if(R24BIT == 1) for (uint32_t i = 0; i < n; i++)  block[i] = (block[i] & 0x7F) << 1;
+		// 18-bit mode: expand 7-bit channels to 8-bit
+	else
+	{
+		// 16-bit mode: expand RGB565 → RGB666 (3 bytes/pixel)
+        // Process backwards to avoid overwriting unread data
+		for (int32_t p = npix - 1; p >= 0; p--) {
+            uint16_t raw = (block[p*2] << 8) | block[p*2 + 1];
+
+            uint8_t r5 = (raw >> 11) & 0x1F;
+            uint8_t g6 = (raw >> 5)  & 0x3F;
+            uint8_t b5 =  raw        & 0x1F;
+
+            // Expand to 6-bit channels (RGB666)
+            block[p*3 + 0] = (r5 * 63) / 31;   // R6
+            block[p*3 + 1] = g6;               // G6 (already 6 bits)
+            block[p*3 + 2] = (b5 * 63) / 31;   // B6
+        }
+	}
+	return npix*3;
 }
 
 

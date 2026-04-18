@@ -223,7 +223,7 @@ void Wheel::on_PCF8575_input_changed()
     volatile uint32_t lastDebounceTime = 0; // Last debounce time volatile 
     uint32_t currentTime = millis(); 
 
-    if ((currentTime - lastDebounceTime) > 100) 
+    if ((currentTime - lastDebounceTime) > 250) 
     {     
         vTaskNotifyGiveFromISR(_instance->_extendedGPIOWatcher, &xHigherPriorityTaskWoken); 
         portYIELD_FROM_ISR(xHigherPriorityTaskWoken);

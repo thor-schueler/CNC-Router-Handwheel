@@ -74,12 +74,14 @@ void DISPLAY_Wheel::w_area_print(String s, uint16_t c, bool newline)
     set_text_color(c);
     set_text_back_color(0x0);
     set_text_size(1);
-    while(w_area_y1 + w_area_cursor_y > w_area_y2 - text_size*8)
+
+    int lines = count_lines(s);
+    while(w_area_y1 + w_area_cursor_y > w_area_y2 - lines*(text_size*8 + LINE_SPACING))
     {
         // scroll display area to make space
         window_scroll(w_area_x1, w_area_y1, w_area_x2-w_area_x1, w_area_y2-w_area_y1, 
-            0, text_size*8, buf1, buf2, text_size*8);
-        w_area_cursor_y = w_area_cursor_y - text_size*8;
+            0, text_size*8 + LINE_SPACING, buf1, buf2, text_size*8 + LINE_SPACING);
+        w_area_cursor_y = w_area_cursor_y - text_size*8 - LINE_SPACING;
     }
 
     print_string(s, w_area_cursor_x, w_area_cursor_y, w_area_x1, w_area_y1);
@@ -511,4 +513,19 @@ void DISPLAY_Wheel::write_z(float z)
     set_text_color(0xffffff);
     set_text_size(2);
     print_number_float(z, 3, 348, 65, '.', 7, ' ');
+}
+
+/**
+ * @brief Counts the number of lines in a string (based on the number of newline characters)
+ * @param s - The string to count lines in
+ * @return The number of lines in the string
+ */
+int DISPLAY_Wheel::count_lines(const String& s) {
+    int count = 1;
+    const char* p = s.c_str();
+    while (*p) {
+        if (*p == '\n') count++;
+        p++;
+    }
+    return count;
 }

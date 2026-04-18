@@ -1022,7 +1022,7 @@ size_t DISPLAY_GUI::write(uint8_t c)
 {
 	if (c == '\n') 
 	{
-    	text_y += text_size*8;
+    	text_y += text_size*8 + LINE_SPACING;
     	text_x  = 0;
  	} 
 	else if(c == '\r')
