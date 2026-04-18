@@ -9,6 +9,11 @@
 #include <stdarg.h>
 #include "SerialLogger.h"
 
+#include "driver/uart.h"
+#include "hal/uart_ll.h"
+#include "soc/uart_reg.h"
+#include "soc/uart_struct.h"
+
 #define UNIX_EPOCH_START_YEAR 1900
 
 /**
@@ -193,6 +198,9 @@ void SerialLogger::SetSpeed(uint32_t speed)
     Serial.end();
   }
   Serial.begin(speed);
+    
+    uart_ll_set_sclk(UART_LL_GET_HW(0), SOC_MOD_CLK_APB);
+    uart_set_baudrate(UART_NUM_0, speed);
 }
 
 /**
