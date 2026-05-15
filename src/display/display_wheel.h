@@ -20,8 +20,25 @@ typedef enum { UP, DOWN, LEFT, RIGHT} Direction;
 
 extern const unsigned char lcars[] PROGMEM;
 extern const unsigned char splash[] PROGMEM;
+extern const unsigned char battery[] PROGMEM;
+extern const unsigned char battery_charging[] PROGMEM;
+extern const unsigned char wifi_on[] PROGMEM;
+extern const unsigned char wifi_off[] PROGMEM;
+extern const unsigned char usb_on[] PROGMEM;
+extern const unsigned char usb_off[] PROGMEM;
+extern const unsigned char bt_on[] PROGMEM;
+extern const unsigned char bt_off[] PROGMEM;
 extern const size_t lcars_size;
 extern const size_t splash_size;
+extern const size_t battery_size;
+extern const size_t battery_charging_size;
+extern const size_t wifi_on_size;
+extern const size_t wifi_off_size;
+extern const size_t usb_on_size;
+extern const size_t usb_off_size;
+extern const size_t bt_on_size;
+extern const size_t bt_off_size;
+
 
 /**
  * @brief Implements the display for the handwheel
@@ -35,6 +52,15 @@ class DISPLAY_Wheel:public DISPLAY_SPI
 		 */
 		DISPLAY_Wheel();
 
+		/**
+		 * @brief Draws an arrow on the display
+		 * @param x - The x coordinate of the arrow
+		 * @param y - The y coordinate of the arrow
+		 * @param d - The direction of the arrow
+		 * @param size - The size of the arrow
+		 * @param fg - The foreground color of the arrow
+		 * @param bg - The background color of the arrow
+		 */
 		void draw_arrow(int16_t x, int16_t y, Direction d, uint8_t size, int16_t fg, int16_t bg);
 
 		/**
@@ -73,10 +99,23 @@ class DISPLAY_Wheel:public DISPLAY_SPI
 		void write_axis(Axis axis);
 
 		/**
+		 * @brief Writes the battery status to the display
+		 */
+		void write_battery_status();
+
+		/**
 		 * @brief Writes the last command into the display
 		 * @param c - the command name.
 		 */
 		void write_command(String c);
+
+		/**
+		 * @brief Writes the connection status to the display
+		 * @param had_usb - Whether the device had USB connectivity
+		 * @param has_wifi - Whether the device has WiFi connectivity
+		 * @param has_bt - Whether the device has Bluetooth connectivity
+		 */
+		void write_connection_status(bool had_usb, bool has_wifi, bool has_bt);
 
 		/**
 		 * @brief Writes emergency indicator to the disaply

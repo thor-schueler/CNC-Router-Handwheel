@@ -31,7 +31,9 @@ void DISPLAY_Wheel::init()
     DISPLAY_SPI::init();
     draw_background(lcars, lcars_size);
     draw_image(splash, splash_size, w_area_x1, w_area_y1, w_area_x2-w_area_x1, w_area_y2-w_area_y1);
-    
+    write_connection_status(false, false, false);
+    write_battery_status();
+
     Logger.Info(F("Attempting allocation of screen scrolling memory buffer..."));
     Logger.Info_f(F("....Largest free block: %d"), heap_caps_get_largest_free_block(MALLOC_CAP_8BIT));
     buf1 = (uint8_t *)heap_caps_malloc(buffer_size, MALLOC_CAP_8BIT);
@@ -96,6 +98,15 @@ void DISPLAY_Wheel::w_area_print(String s, uint16_t c, bool newline)
 
 }
 
+/**
+ * @brief Draws an arrow on the display
+ * @param x - The x coordinate of the arrow
+ * @param y - The y coordinate of the arrow
+ * @param d - The direction of the arrow
+ * @param size - The size of the arrow
+ * @param fg - The foreground color of the arrow
+ * @param bg - The background color of the arrow
+ */
 void DISPLAY_Wheel::draw_arrow(int16_t x, int16_t y, Direction d, uint8_t size, int16_t fg, int16_t bg)
 {
     const uint8_t _w = 8;
@@ -385,6 +396,14 @@ void DISPLAY_Wheel::write_axis(Axis axis)
 }
 
 /**
+ * @brief Writes the battery status to the display
+ */
+void DISPLAY_Wheel::write_battery_status()
+{
+    draw_image(battery, battery_size, 20, 301, 40, 12);
+}
+
+/**
  * @brief Writes the last command into the display
  * @param c - the command name.
  */
@@ -395,6 +414,39 @@ void DISPLAY_Wheel::write_command(String c)
     set_text_color(0xffffff);
     set_text_size(1);
     print_string(c, 141, 101);  
+}
+
+/**
+ * @brief Writes the connection status to the display
+ * @param has_usb - Whether the device had USB connectivity
+ * @param has_wifi - Whether the device has WiFi connectivity
+ * @param has_bt - Whether the device has Bluetooth connectivity
+ */
+void DISPLAY_Wheel::write_connection_status(bool has_usb, bool has_wifi, bool has_bt)
+{
+  static bool last_has_usb = false;
+  static bool last_has_wifi = false;
+  static bool last_has_bt = false;
+  static bool is_first = true;
+
+  if((has_usb != last_has_usb) || is_first)
+  {
+    last_has_usb = has_usb;
+    draw_image(has_usb? usb_on : usb_off, has_usb? usb_on_size : usb_off_size, 5, 250, 13, 17);
+  }
+
+  if((has_wifi != last_has_wifi) || is_first)
+  {
+    last_has_wifi = has_wifi;
+    draw_image(has_wifi? wifi_on : wifi_off, has_wifi? wifi_on_size : wifi_off_size, 18, 250, 12, 17);
+  }
+
+  if((has_bt != last_has_bt) || is_first)
+  {
+    last_has_bt = has_bt;
+    draw_image(has_bt? bt_on : bt_off, has_bt? bt_on_size : bt_off_size, 39, 250, 24, 16);
+  }
+  is_first = false;
 }
 
 /**
