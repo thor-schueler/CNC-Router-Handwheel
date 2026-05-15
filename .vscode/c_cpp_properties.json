@@ -25,6 +25,7 @@
                 "${env:USERPROFILE}\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.*\\libraries\\WiFi\\src",
                 "${env:USERPROFILE}\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.*\\libraries\\Network\\src",
                 "${env:USERPROFILE}\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.*\\libraries\\FS\\src",
+                "${env:USERPROFILE}\\AppData\\Local\\Arduino15\\packages\\esp32\\hardware\\esp32\\3.*\\libraries\\*\\src",
 
                 "${env:USERPROFILE}\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\esp32-libs\\*\\qio_qspi\\include",
                 "${env:USERPROFILE}\\AppData\\Local\\Arduino15\\packages\\esp32\\tools\\esp32-libs\\*\\include\\**",

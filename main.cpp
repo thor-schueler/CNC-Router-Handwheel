@@ -32,7 +32,7 @@
 /**
  * Note that there is a bug in the Hardware Serial Implementation of the ESP32 core starting with v3.0.0 up that incorrectly
  * initializes the UART with the wrong clock, resulting in barbled output for bad rates above 115200 and below 250000 baud.
- * Since we need buad rate of 230400 for the wheel communication, we have two options: either implement serial communication uing 
+ * Since we need buad rate of 230400 for the wheel communication, we have two options: either implement serial communication using 
  * UART DMA directly (by Adjusting SerialLogger.cpp) using the code below or updating esp32-hal-uart.c method uartBegin, line 511 or 
  * thereabouts. There is a if statement checking the baudrate. If the baudrate is <= 250000 the the clocksource is
  * set to UART_SCLK_REF_TICK, otherwise the clocksource is UART_SCLK_APB. That is fine for baudrates up to 115200. However, for higher rates
@@ -78,23 +78,33 @@ void connect_WiFi(void* args)
   int wifi_try_counter = 0;
   bool connected = false;
 
-  if(wheel != NULL) 
-    wheel->write_status_message(F("Attempting to connect to Wifi %s"), config.ssid);
-  while (true)
-  {
-    connected = config.Connect_Wifi();
-    if(connected) break;
-    if(wifi_try_counter++ > 5) break;
+  while(true)
+  {  
+    if(WiFi.status() != WL_CONNECTED)
+    {
+      if(wheel != NULL && !connected) wheel->write_status_message(F("Attempting to connect to Wifi %s"), config.ssid);
+      if(wheel !=NULL && WiFi.status() == WL_CONNECTION_LOST) wheel->write_status_message(F("Connection to Wifi %s lost, attempting to reconnect"), config.ssid);
+      if(wheel !=NULL && WiFi.status() == WL_CONNECTION_LOST) wheel->write_status_message(F("Connection to Wifi %s failed, retrying..."), config.ssid);      
+      while (true)
+      {
+        connected = config.Connect_Wifi();
+        if(connected) break;
+        if(wifi_try_counter++ > 5) break;
+      }
+      if(connected) 
+      {
+        if(wheel != NULL) wheel->write_status_message(F("Wifi connected to %s: %s"), config.ssid, WiFi.localIP().toString());
+        config.InitializeTime();
+      }
+      else
+      {
+        if(wheel != NULL) wheel->write_status_message(F("Wifi failed to connect to %s"), config.ssid);
+      }
+      vTaskDelay(pdMS_TO_TICKS(5000));
+    }
+    else vTaskDelay(pdMS_TO_TICKS(5000));
   }
-  if(connected) 
-  {
-    if(wheel != NULL) wheel->write_status_message(F("Wifi connected to %s: %s"), config.ssid, WiFi.localIP().toString());
-    config.InitializeTime();
-  }
-  else
-  {
-    if(wheel != NULL) wheel->write_status_message(F("Wifi failed to connect to %s"), config.ssid);
-  }
+
   vTaskDelete(wifi_task);
   wifi_task=NULL;
 }

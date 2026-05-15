@@ -26,6 +26,7 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <FunctionalInterrupt.h>
 #include "wheel.h"
 #include "../logging/SerialLogger.h"
+#include "../connection_monitor/connection_monitor.h"
 
 bool Wheel::_key_changed = false;
 static Wheel *_instance = nullptr;
@@ -164,6 +165,8 @@ Wheel::Wheel()
     _display->set_rotation(3);
     _display->init();
     _instance = this;
+    ConnectionMonitor::get_instance()->set_display_instance(_display);
+
 
     Logger.Info(F("....Inititialize GPIO pins"));
     pinMode(AXIS_Z, INPUT_PULLUP);

@@ -111,11 +111,11 @@ class DISPLAY_Wheel:public DISPLAY_SPI
 
 		/**
 		 * @brief Writes the connection status to the display
-		 * @param had_usb - Whether the device had USB connectivity
+		 * @param has_usb - Whether the device has USB connectivity
 		 * @param has_wifi - Whether the device has WiFi connectivity
 		 * @param has_bt - Whether the device has Bluetooth connectivity
 		 */
-		void write_connection_status(bool had_usb, bool has_wifi, bool has_bt);
+		void write_connection_status(bool has_usb, bool has_wifi, bool has_bt);
 
 		/**
 		 * @brief Writes emergency indicator to the disaply
