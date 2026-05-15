@@ -438,13 +438,13 @@ void DISPLAY_Wheel::write_connection_status(bool has_usb, bool has_wifi, bool ha
   if((has_wifi != last_has_wifi) || is_first)
   {
     last_has_wifi = has_wifi;
-    draw_image(has_wifi? wifi_on : wifi_off, has_wifi? wifi_on_size : wifi_off_size, 18, 250, 12, 17);
+    draw_image(has_wifi? wifi_on : wifi_off, has_wifi? wifi_on_size : wifi_off_size, 39, 250, 24, 16);
   }
 
   if((has_bt != last_has_bt) || is_first)
   {
     last_has_bt = has_bt;
-    draw_image(has_bt? bt_on : bt_off, has_bt? bt_on_size : bt_off_size, 39, 250, 24, 16);
+    draw_image(has_bt? bt_on : bt_off, has_bt? bt_on_size : bt_off_size, 23, 250, 12, 17);
   }
   is_first = false;
 }
