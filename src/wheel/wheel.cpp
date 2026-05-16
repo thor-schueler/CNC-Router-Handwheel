@@ -26,7 +26,6 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <FunctionalInterrupt.h>
 #include "wheel.h"
 #include "../logging/SerialLogger.h"
-#include "../connection_monitor/connection_monitor.h"
 
 bool Wheel::_key_changed = false;
 static Wheel *_instance = nullptr;
@@ -165,8 +164,6 @@ Wheel::Wheel()
     _display->set_rotation(3);
     _display->init();
     _instance = this;
-    ConnectionMonitor::get_instance()->set_display_instance(_display);
-
 
     Logger.Info(F("....Inititialize GPIO pins"));
     pinMode(AXIS_Z, INPUT_PULLUP);
@@ -207,9 +204,9 @@ Wheel::Wheel()
 
     Logger.Info("....Create various tasks");
     xTaskCreatePinnedToCore(extended_GPIO_watcher, "extendedGPIOWatcher", 2048, this, 1, &_extendedGPIOWatcher, 0);
-    xTaskCreatePinnedToCore(display_runner, "displayRunner", 8192, this, 1, &_displayRunner, 0);
-    xTaskCreatePinnedToCore(wheel_runner, "wheelRunner", 8192, this, 1, &_wheelRunner, 0);
-    xTaskCreatePinnedToCore(ems_change_runner, "emsRunner", 2048, this, 1, &_emsChangeRunner, 0);
+    xTaskCreatePinnedToCore(display_runner, "displayRunner", 1560, this, 1, &_displayRunner, 0);
+    xTaskCreatePinnedToCore(wheel_runner, "wheelRunner", 2048, this, 1, &_wheelRunner, 0);
+    xTaskCreatePinnedToCore(ems_change_runner, "emsRunner", 1560, this, 1, &_emsChangeRunner, 0);
 
     Logger.Info("Startup done");
 }
@@ -296,6 +293,11 @@ void Wheel::extended_GPIO_watcher(void* args)
                             // write command to serial
                             Serial.println(c);
                             Serial.flush();
+                            if (_this->_bt != nullptr && _this->_bt->hasClient())
+                            {
+                                _this->_bt->println(c);
+                            }
+                            
                             _this->_command_state ^= (1 << i);
 
                             if(Commands[i]._zero_x) _this->_x = 0;
@@ -352,6 +354,12 @@ void Wheel::ems_change_runner(void* args)
             Serial.write("!");
             Serial.write(0x18); // [Ctrl+X]
             Serial.write("\n");
+            if (_this->_bt != nullptr && _this->_bt->hasClient())
+            {
+                _this->_bt->write('!');
+                _this->_bt->write(0x18); // [Ctrl+X]
+                _this->_bt->write('\n');
+            }
             if (xSemaphoreTake(_this->_display_mutex, portMAX_DELAY) == pdTRUE) 
             {
                 _this->_display->w_area_print("Emergency Shutdown has been engaged.", 0xf800 ,true); 
@@ -529,6 +537,10 @@ void Wheel::wheel_runner(void* args)
                 _this->_direction == -1 ? '-': '+' ,
                 _this->_selected_feed);
             Serial.println(s);
+            if(_this->_bt != nullptr && _this->_bt->hasClient())
+            {
+                _this->_bt->println(s);
+            }
         }
     }
 }

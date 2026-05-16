@@ -4,8 +4,10 @@
 #ifndef _WHEEL_H_
 #define _WHEEL_H_
 
-#include <unordered_map>
 #include "Arduino.h"
+#include <unordered_map>
+#include <BluetoothSerial.h>
+
 #include "PCF8575.h"
 #include "../display/display_wheel.h"
 
@@ -95,12 +97,31 @@ class Wheel
          */
         static std::unordered_map<uint8_t, Command_t> Commands;
         
+
+        /**
+         * @brief Get the display object attached to the wheel controller.
+         * 
+         * @return DISPLAY_Wheel* instance.  
+         */
+        DISPLAY_Wheel* get_display() { return _display; }
+
+        /**
+         * @brief Sets the Bluetooth serial instance
+         * @param bt - pointer to the Bluetooth serial instance
+         */
+        void set_bluetooth_instance(BluetoothSerial* bt) { _bt = bt; }
+
         /**
          * @brief Writes a status message to the display
          * @param format - the format string
          * @param ... - variable argument list  
          */
         void write_status_message(const String &format, ...);
+
+        TaskHandle_t _extendedGPIOWatcher;
+        TaskHandle_t _displayRunner;
+        TaskHandle_t _wheelRunner;
+        TaskHandle_t _emsChangeRunner;
 
     protected:
 
@@ -167,12 +188,7 @@ class Wheel
         static bool _key_changed;      
         DISPLAY_Wheel *_display = nullptr;
         PCF8575 *_pcf8575 = nullptr;
-    
-        TaskHandle_t _extendedGPIOWatcher;
-        TaskHandle_t _displayRunner;
-        TaskHandle_t _encoderWatcher;
-        TaskHandle_t _wheelRunner;
-        TaskHandle_t _emsChangeRunner;
+        BluetoothSerial *_bt = nullptr;
 
         SemaphoreHandle_t _display_mutex;
         

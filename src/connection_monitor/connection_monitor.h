@@ -9,7 +9,7 @@
 #include "../display/display_wheel.h"
 
 
-#define MONITORING_PERIOD pdMS_TO_TICKS(1000)
+#define MONITORING_PERIOD 1000
 
 /**
  * @brief Implements monitoring functionality for wifi, bluetooth and usb connections
@@ -26,11 +26,19 @@ class ConnectionMonitor
         static ConnectionMonitor* get_instance();
 
         /**
+         * @brief Sets the instance of the BluetoothSerial class to use to monitor Bluetooth connectivity.
+         * @param bt - Pointer to a BluetoothSerial instance. 
+         */
+        static void set_bluetooth_instance(BluetoothSerial* bt);
+
+        /**
          * @brief Sets the instance of the display manager to use to update
          * the display.
          * @param display - Pointer to a DISPLAY_Wheel instance. 
          */
         static void set_display_instance(DISPLAY_Wheel* display);
+
+        TaskHandle_t monitor = NULL;
 
     protected:
 
@@ -50,11 +58,11 @@ class ConnectionMonitor
         bool has_usb = false;
         bool has_wifi = false;
         bool has_bt = false;
-        TaskHandle_t monitor = NULL;
+        
 
-        static BluetoothSerial* bt;
         static ConnectionMonitor* instance;
-        static DISPLAY_Wheel* display;
+        DISPLAY_Wheel* display = nullptr;
+        BluetoothSerial* bt = nullptr;
 
 };
 

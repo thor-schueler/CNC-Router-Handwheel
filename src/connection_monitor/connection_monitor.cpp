@@ -6,10 +6,9 @@
 #include <WiFi.h>
 #include <HardwareSerial.h>
 #include "connection_monitor.h"
+#include "../logging/SerialLogger.h"
 
 ConnectionMonitor* ConnectionMonitor::instance = nullptr;
-DISPLAY_Wheel* ConnectionMonitor::display = nullptr;
-BluetoothSerial* ConnectionMonitor::bt = nullptr;
 
 /**
  * @brief Gets the instance of Connection Monitor Singleton.
@@ -29,8 +28,10 @@ ConnectionMonitor* ConnectionMonitor::get_instance()
  */
 ConnectionMonitor::ConnectionMonitor()
 {
-    bt->begin("CNC Pendant", false, false);
-    xTaskCreatePinnedToCore(runner, "connection_monitor", 1024, this, 1, &monitor, 0);
+    Logger.Info(F("Initializing Connection Monitor"));
+    Logger.Info(F("....Starting Monitor Task"));
+    xTaskCreatePinnedToCore(runner, "connection_monitor", 1024, this, 1, &monitor, 1);
+    Logger.Info(F("Done."));
 }
 
 /**
@@ -40,6 +41,7 @@ ConnectionMonitor::ConnectionMonitor()
 void ConnectionMonitor::runner(void* args)
 {
     ConnectionMonitor* _this = (ConnectionMonitor*)args;
+    vTaskDelay(pdMS_TO_TICKS(100));
     while(true)
     {
         _this->has_wifi = WiFi.status() == WL_CONNECTED;
@@ -50,7 +52,7 @@ void ConnectionMonitor::runner(void* args)
             while(Serial.available() > 0 && Serial.peek() == 0x0) Serial.read(); 
                 // Read the available handshake byte. If other bytes are waiting, leave them be....
         }
-        if(ConnectionMonitor::bt->hasClient())
+        if(_this->bt != nullptr && _this->bt->hasClient())
         {
             _this->has_bt = true;
         }
@@ -59,14 +61,25 @@ void ConnectionMonitor::runner(void* args)
             _this->has_bt = false;
         }
 
-        if(ConnectionMonitor::display != nullptr)
+        if(_this->display != nullptr)
         {
-            ConnectionMonitor::display->write_connection_status(_this->has_usb, _this->has_wifi, _this->has_bt);
+            _this->display->write_connection_status(_this->has_usb, _this->has_wifi, _this->has_bt);
         }
-        vTaskDelay(MONITORING_PERIOD);
+        vTaskDelay(pdMS_TO_TICKS(MONITORING_PERIOD));
     }
     vTaskDelete(_this->monitor);
     _this->monitor=nullptr;
+}
+
+
+/**
+ * @brief Sets the instance of the BluetoothSerial class to use to monitor Bluetooth connectivity.
+ * @param bt - Pointer to a BluetoothSerial instance. 
+ */
+void ConnectionMonitor::set_bluetooth_instance(BluetoothSerial* bt)
+{
+    if(bt == nullptr) Logger.Info(F("ConnectionMonitor: Attempted to set bluetooth instance to null pointer"));
+    ConnectionMonitor::instance->bt = bt;
 }
 
 /**
@@ -76,5 +89,6 @@ void ConnectionMonitor::runner(void* args)
  */
 void ConnectionMonitor::set_display_instance(DISPLAY_Wheel* display)
 {
-    ConnectionMonitor::display = display;
+    if(display == nullptr) Logger.Info(F("ConnectionMonitor: Attempted to set display instance to null pointer"));
+    ConnectionMonitor::instance->display = display;
 }

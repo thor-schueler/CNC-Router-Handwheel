@@ -14,6 +14,8 @@
 #include "ESP.h"
 #include <WiFi.h>
 #include <SPI.h>
+#include <esp_heap_caps.h>
+#include <BluetoothSerial.h>
 
 // C99 libraries
 #include <cstdlib>
@@ -24,6 +26,7 @@
 #include "src/config/config_page.h"
 #include "src/logging/SerialLogger.h"
 #include "src/display/display_wheel.h"
+#include "src/connection_monitor/connection_monitor.h"
 #include "src/wheel/wheel.h"
 
 #define TELEMETRY_FREQUENCY_MILLISECS 120000
@@ -66,6 +69,7 @@
 static Config config;
 Wheel *wheel = NULL;
 TaskHandle_t wifi_task = NULL;
+BluetoothSerial bt;
 static bool has_wifi = true;
 static bool config_mode = false;
 
@@ -100,6 +104,7 @@ void connect_WiFi(void* args)
       {
         if(wheel != NULL) wheel->write_status_message(F("Wifi failed to connect to %s"), config.ssid);
       }
+      Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap()); 
       vTaskDelay(pdMS_TO_TICKS(5000));
     }
     else vTaskDelay(pdMS_TO_TICKS(5000));
@@ -110,7 +115,7 @@ void connect_WiFi(void* args)
 }
 
 #ifdef SET_LOOP_TASK_STACK_SIZE
-SET_LOOP_TASK_STACK_SIZE(16384);
+SET_LOOP_TASK_STACK_SIZE(3052);
   //
   // This will only work with ESP-Arduino 2.0.7 or higher. 
   //
@@ -124,6 +129,13 @@ SET_LOOP_TASK_STACK_SIZE(16384);
  */
 void setup()
 {
+  // Enable PSRAM if available. This will allow us to use the PSRAM for dynamic memory allocation, 
+  // which is crucial for the display and other memory intensive operations.
+  esp_log_level_set("*", ESP_LOG_NONE);
+  if (psramFound()) {
+    heap_caps_malloc_extmem_enable(8096);   // allow malloc/new to use PSRAM, threshold in bytes
+  }
+
   //
   // Initialize configuration data from EEPROM
   //
@@ -149,7 +161,7 @@ void setup()
   //
   if(AP_ENABLE_PIN == 0)
   {
-    config.StartAP();
+    //config.StartAP();
   }
   else
   {
@@ -167,16 +179,36 @@ void setup()
       Logger.Info_f(F("Config AP disabled. Do not pull GPIO%i low to enable the Config AP."), AP_ENABLE_PIN);  
     }
   }
+
   wheel = new Wheel();
-  xTaskCreatePinnedToCore(connect_WiFi, "wificonnector", 2048, NULL, 1, &wifi_task, 0);
+
+  xTaskCreatePinnedToCore(connect_WiFi, "wificonnector", 2560, NULL, 1, &wifi_task, 1);
   if(config_mode)
   {
     Logger.Info_f(F("Device is in config mode. Do not pull GPIO %i low to enter normal operations"), AP_ENABLE_PIN);
     return;
   }  
-  
+
+  vTaskDelay(pdMS_TO_TICKS(5000));
+    // this delay is critical to give the BT stack enough time to initialize before we start initializing WiFi.
+    // these two cannot initialize in parallel, at least not without significant refactoring of the code and 
+    // careful management of the BT stack initialization. 
+    // Without this, the BT stack will crash with a Guru Meditation error
+  Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap()); 
+  Logger.Info(F("Starting Bluetooth"));
+
+
+  bt.disableSSP();
+  bt.begin("CNC Pendant", false, true);
+  Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap()); 
+
+  ConnectionMonitor::get_instance()->set_display_instance(wheel->get_display());
+  ConnectionMonitor::get_instance()->set_bluetooth_instance(&bt);
+  wheel->set_bluetooth_instance(&bt);
+
   Logger.Info(F("... Init done"));
   Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap()); 
+  Logger.Info_f(F("Free PSRAM: %d"), ESP.getFreePsram());
 }
 
 /**
@@ -186,5 +218,14 @@ void setup()
  */
 void loop()
 {
-  vTaskDelay(1000);
+  vTaskDelay(10000);
+  Logger.Info_f(F("Loop task stack high water mark: %i"), uxTaskGetStackHighWaterMark(NULL));
+  Logger.Info_f(F("Wifi task stack high water mark: %i"), uxTaskGetStackHighWaterMark(wifi_task));
+
+  Logger.Info_f(F("GPIO task stack high water mark: %i"), uxTaskGetStackHighWaterMark(wheel->_extendedGPIOWatcher));
+  Logger.Info_f(F("DISPLAY task stack high water mark: %i"), uxTaskGetStackHighWaterMark(wheel->_displayRunner));
+  Logger.Info_f(F("Wheel task stack high water mark: %i"), uxTaskGetStackHighWaterMark(wheel->_wheelRunner));
+  Logger.Info_f(F("EMS task stack high water mark: %i"), uxTaskGetStackHighWaterMark(wheel->_emsChangeRunner));
+  Logger.Info_f(F("Monitor task stack high water mark: %i"), uxTaskGetStackHighWaterMark(ConnectionMonitor::get_instance()->monitor));
+  Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap());
 }
