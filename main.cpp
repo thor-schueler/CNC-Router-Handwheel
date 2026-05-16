@@ -162,7 +162,7 @@ void setup()
   //
   if(AP_ENABLE_PIN == 0)
   {
-    //config.StartAP();
+    config.StartAP();
   }
   else
   {
@@ -220,8 +220,8 @@ void setup()
 void loop()
 {
   vTaskDelay(10000);
-  Logger.Info_f(F("Loop task stack high water mark: %i"), uxTaskGetStackHighWaterMark(NULL));
-  Logger.Info_f(F("Wifi task stack high water mark: %i"), uxTaskGetStackHighWaterMark(wifi_task));
+  //Logger.Info_f(F("Loop task stack high water mark: %i"), uxTaskGetStackHighWaterMark(NULL));
+  //Logger.Info_f(F("Wifi task stack high water mark: %i"), uxTaskGetStackHighWaterMark(wifi_task));
 
   //Logger.Info_f(F("GPIO task stack high water mark: %i"), uxTaskGetStackHighWaterMark(wheel->_extendedGPIOWatcher));
   //Logger.Info_f(F("DISPLAY task stack high water mark: %i"), uxTaskGetStackHighWaterMark(wheel->_displayRunner));
