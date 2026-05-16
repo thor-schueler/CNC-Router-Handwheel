@@ -413,7 +413,7 @@ void Config::write_values_to_eeprom()
     command["zZ"] = this->Commands[i]._zero_z;
   }
   int size = measureJson(config) + 1;
-  char *buf = (char *)malloc(size*sizeof(char));
+  char *buf = (char *)heap_caps_malloc(size*sizeof(char), MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
   serializeJson(config, buf, size);
   pos = write_string_to_eeprom(pos, buf);
   free(buf);

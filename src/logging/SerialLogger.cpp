@@ -68,7 +68,7 @@ size_t SerialLogger::Info_f(String format, ...)
   };
 
   // allocate memory for the operation
-  buf = (char*) malloc(len+1);
+  buf = (char*) heap_caps_malloc(len+1, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
   if(buf == NULL) {
     // memory allocation error. 
     va_end(arg);
@@ -125,7 +125,7 @@ size_t SerialLogger::Error_f(String format, ...)
     return 0;
   };
   // allocate memory for the operation
-  buf = (char*) malloc(len+1);
+  buf = (char*) heap_caps_malloc(len+1, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
   if(buf == NULL) {
     // memory allocation error. 
     va_end(arg);

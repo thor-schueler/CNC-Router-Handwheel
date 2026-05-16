@@ -38,8 +38,6 @@ class ConnectionMonitor
          */
         static void set_display_instance(DISPLAY_Wheel* display);
 
-        TaskHandle_t monitor = NULL;
-
     protected:
 
         /**
@@ -59,7 +57,8 @@ class ConnectionMonitor
         bool has_wifi = false;
         bool has_bt = false;
         
-
+        TaskHandle_t monitor = NULL;
+        
         static ConnectionMonitor* instance;
         DISPLAY_Wheel* display = nullptr;
         BluetoothSerial* bt = nullptr;

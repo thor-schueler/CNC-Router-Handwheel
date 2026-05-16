@@ -459,7 +459,7 @@ void Wheel::write_status_message(const String &format, ...)
             };
 
             // allocate memory for the operation
-            char *buf = (char*) malloc(len+1);
+            char *buf = (char*) heap_caps_malloc(len+1, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
             if(buf == NULL) {
                 // memory allocation error.
                 va_end(args); 

@@ -18,9 +18,11 @@
 #include <BluetoothSerial.h>
 
 // C99 libraries
+#include <cstddef>
 #include <cstdlib>
-#include <string.h>
-#include <time.h>
+#include <cstring>
+#include <ctime>
+#include <new>
 
 // local libraries
 #include "src/config/config_page.h"
@@ -64,7 +66,6 @@
       const char *data = "Hello, UART0 with DMA!\n"; 
       uart_write_bytes(UART_NUM_0, data, strlen(data)); 
 */
-
 
 static Config config;
 Wheel *wheel = NULL;
@@ -133,7 +134,7 @@ void setup()
   // which is crucial for the display and other memory intensive operations.
   esp_log_level_set("*", ESP_LOG_NONE);
   if (psramFound()) {
-    heap_caps_malloc_extmem_enable(8096);   // allow malloc/new to use PSRAM, threshold in bytes
+    heap_caps_malloc_extmem_enable(256);   // allow malloc/new to use PSRAM, threshold in bytes
   }
 
   //
@@ -222,10 +223,10 @@ void loop()
   Logger.Info_f(F("Loop task stack high water mark: %i"), uxTaskGetStackHighWaterMark(NULL));
   Logger.Info_f(F("Wifi task stack high water mark: %i"), uxTaskGetStackHighWaterMark(wifi_task));
 
-  Logger.Info_f(F("GPIO task stack high water mark: %i"), uxTaskGetStackHighWaterMark(wheel->_extendedGPIOWatcher));
-  Logger.Info_f(F("DISPLAY task stack high water mark: %i"), uxTaskGetStackHighWaterMark(wheel->_displayRunner));
-  Logger.Info_f(F("Wheel task stack high water mark: %i"), uxTaskGetStackHighWaterMark(wheel->_wheelRunner));
-  Logger.Info_f(F("EMS task stack high water mark: %i"), uxTaskGetStackHighWaterMark(wheel->_emsChangeRunner));
-  Logger.Info_f(F("Monitor task stack high water mark: %i"), uxTaskGetStackHighWaterMark(ConnectionMonitor::get_instance()->monitor));
+  //Logger.Info_f(F("GPIO task stack high water mark: %i"), uxTaskGetStackHighWaterMark(wheel->_extendedGPIOWatcher));
+  //Logger.Info_f(F("DISPLAY task stack high water mark: %i"), uxTaskGetStackHighWaterMark(wheel->_displayRunner));
+  //Logger.Info_f(F("Wheel task stack high water mark: %i"), uxTaskGetStackHighWaterMark(wheel->_wheelRunner));
+  //Logger.Info_f(F("EMS task stack high water mark: %i"), uxTaskGetStackHighWaterMark(wheel->_emsChangeRunner));
+  //Logger.Info_f(F("Monitor task stack high water mark: %i"), uxTaskGetStackHighWaterMark(ConnectionMonitor::get_instance()->monitor));
   Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap());
 }

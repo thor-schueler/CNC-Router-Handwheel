@@ -514,7 +514,7 @@ void DISPLAY_Wheel::write_status(const String &format, ...)
     };
     
     // allocate memory for the operation
-    buf = (char*) malloc(len+1);
+    buf = (char*) heap_caps_malloc(len+1, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     if(buf == NULL) {
       // memory allocation error.
       va_end(args); 

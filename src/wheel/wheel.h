@@ -118,11 +118,6 @@ class Wheel
          */
         void write_status_message(const String &format, ...);
 
-        TaskHandle_t _extendedGPIOWatcher;
-        TaskHandle_t _displayRunner;
-        TaskHandle_t _wheelRunner;
-        TaskHandle_t _emsChangeRunner;
-
     protected:
 
         /**
@@ -189,6 +184,11 @@ class Wheel
         DISPLAY_Wheel *_display = nullptr;
         PCF8575 *_pcf8575 = nullptr;
         BluetoothSerial *_bt = nullptr;
+
+        TaskHandle_t _extendedGPIOWatcher;
+        TaskHandle_t _displayRunner;
+        TaskHandle_t _wheelRunner;
+        TaskHandle_t _emsChangeRunner;
 
         SemaphoreHandle_t _display_mutex;
         
