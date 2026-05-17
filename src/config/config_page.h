@@ -90,10 +90,35 @@ class Config
     void StopAP();
 
     /**
+     * @brief The Bluetooth Device Name
+     * 
+     */
+    String bt_device_name = F("CNC Handwheel Controller");
+
+    /**
+     * @brief Whether to enable WIFI
+     * 
+     */
+    bool enable_wifi = true;
+
+    /**
+     * @brief Whether to enable Bluetooth
+     * 
+     */
+    bool enable_bt = true; 
+
+    /**
+     * @brief The hostname
+     * 
+     */
+    String hostname = F("cnc-handwheel");
+
+    /**
      * @brief The WIFI SSID
      * 
      */
     String ssid = "";
+
 
     uint32_t baud_rate = 115200;
     std::unordered_map<uint8_t, Command_t> Commands;

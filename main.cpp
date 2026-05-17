@@ -32,7 +32,7 @@
 #include "src/wheel/wheel.h"
 
 #define TELEMETRY_FREQUENCY_MILLISECS 120000
-#define AP_ENABLE_PIN 0
+#define AP_ENABLE_PIN 5
 
 /**
  * Note that there is a bug in the Hardware Serial Implementation of the ESP32 core starting with v3.0.0 up that incorrectly
@@ -180,33 +180,35 @@ void setup()
       Logger.Info_f(F("Config AP disabled. Do not pull GPIO%i low to enable the Config AP."), AP_ENABLE_PIN);  
     }
   }
+  //if(config_mode)
+  //{
+  //  Logger.Info_f(F("Device is in config mode. Do not pull GPIO %i low to enter normal operations"), AP_ENABLE_PIN);
+  //  return;
+  //}  
 
   wheel = new Wheel();
-
-  xTaskCreatePinnedToCore(connect_WiFi, "wificonnector", 2560, NULL, 1, &wifi_task, 1);
-  if(config_mode)
+  if(config.enable_wifi)
   {
-    Logger.Info_f(F("Device is in config mode. Do not pull GPIO %i low to enter normal operations"), AP_ENABLE_PIN);
-    return;
-  }  
+    xTaskCreatePinnedToCore(connect_WiFi, "wificonnector", 2560, NULL, 1, &wifi_task, 1);
+    vTaskDelay(pdMS_TO_TICKS(3000));
+      // this delay is critical to give the BT stack enough time to initialize before we start initializing WiFi.
+      // these two cannot initialize in parallel, at least not without significant refactoring of the code and 
+      // careful management of the BT stack initialization. 
+      // Without this, the BT stack will crash with a Guru Meditation error
+  }
+  if(config.enable_bt)
+  {
+    Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap()); 
+    Logger.Info(F("Starting Bluetooth"));
 
-  vTaskDelay(pdMS_TO_TICKS(5000));
-    // this delay is critical to give the BT stack enough time to initialize before we start initializing WiFi.
-    // these two cannot initialize in parallel, at least not without significant refactoring of the code and 
-    // careful management of the BT stack initialization. 
-    // Without this, the BT stack will crash with a Guru Meditation error
-  Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap()); 
-  Logger.Info(F("Starting Bluetooth"));
-
-
-  bt.disableSSP();
-  bt.begin("CNC Pendant", false, true);
-  Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap()); 
-
+    bt.disableSSP();
+    bt.begin(config.bt_device_name, false, true);
+    ConnectionMonitor::get_instance()->set_bluetooth_instance(&bt);
+    wheel->set_bluetooth_instance(&bt);
+    Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap()); 
+  }
+  
   ConnectionMonitor::get_instance()->set_display_instance(wheel->get_display());
-  ConnectionMonitor::get_instance()->set_bluetooth_instance(&bt);
-  wheel->set_bluetooth_instance(&bt);
-
   Logger.Info(F("... Init done"));
   Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap()); 
   Logger.Info_f(F("Free PSRAM: %d"), ESP.getFreePsram());
@@ -220,13 +222,5 @@ void setup()
 void loop()
 {
   vTaskDelay(10000);
-  //Logger.Info_f(F("Loop task stack high water mark: %i"), uxTaskGetStackHighWaterMark(NULL));
-  //Logger.Info_f(F("Wifi task stack high water mark: %i"), uxTaskGetStackHighWaterMark(wifi_task));
-
-  //Logger.Info_f(F("GPIO task stack high water mark: %i"), uxTaskGetStackHighWaterMark(wheel->_extendedGPIOWatcher));
-  //Logger.Info_f(F("DISPLAY task stack high water mark: %i"), uxTaskGetStackHighWaterMark(wheel->_displayRunner));
-  //Logger.Info_f(F("Wheel task stack high water mark: %i"), uxTaskGetStackHighWaterMark(wheel->_wheelRunner));
-  //Logger.Info_f(F("EMS task stack high water mark: %i"), uxTaskGetStackHighWaterMark(wheel->_emsChangeRunner));
-  //Logger.Info_f(F("Monitor task stack high water mark: %i"), uxTaskGetStackHighWaterMark(ConnectionMonitor::get_instance()->monitor));
   Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap());
 }

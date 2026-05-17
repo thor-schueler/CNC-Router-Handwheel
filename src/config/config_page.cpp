@@ -9,6 +9,11 @@ const char *assid = ACCESS_POINT_NAME;
 const char *asecret = ACCESS_POINT_PWD;
 const char *PARAM_INPUT_ssid = "SSID";
 const char *PARAM_INPUT_psw = "psw";
+const char *PARAM_INPUT_baudrate = "BAUDRATE";
+const char *PARAM_INPUT_bt_device_name = "BT_DEVICE_NAME";
+const char *PARAM_INPUT_hostname = "HOSTNAME";
+const char *PARAM_INPUT_enable_wifi = "Enable_WIFI";
+const char *PARAM_INPUT_enable_bt = "Enable_BT";
 
 /**
  * @brief Static web server object.
@@ -45,7 +50,7 @@ bool Config::Connect_Wifi()
     delay(500);
     return false;
   }
-
+  if (this->hostname != "") WiFi.setHostname(this->hostname.c_str());
   if (!WiFi.isConnected())
   {
     digitalWrite(LED_BUILTIN, HIGH); 
@@ -115,9 +120,12 @@ void Config::Print()
   // read configuration from Flash
   //
   if(!this->has_config) this->get_config();
-  
+  Logger.Info_f(F("Enable WIFI: %s"), this->enable_wifi ? F("Yes") : F("No"));
+  Logger.Info_f(F("Hostname: %s"), this->hostname.c_str());  
   Logger.Info_f(F("SSID: %s"), this->ssid.c_str());
   Logger.Info_f(F("SSID Password: %s"), password.length() > 0 ? F("******") : F(""));
+  Logger.Info_f(F("Enable Bluetooth: %s"), this->enable_bt ? F("Yes") : F("No"));
+  Logger.Info_f(F("Bluetooth Device Name: %s"), this->bt_device_name.c_str());
   Logger.Info_f(F("Serial Baud Rate: %u"), baud_rate);
   Logger.Info(F("Configured Commands:"));
   for(int idx=0; idx<12; idx++)
@@ -172,12 +180,16 @@ void Config::StartAP()
       p.second._zero_y = false;
       p.second._zero_z = false;
     }
+    this->enable_wifi = request->hasParam(PARAM_INPUT_enable_wifi, true);
+    this->enable_bt = request->hasParam(PARAM_INPUT_enable_bt, true);
     for (int i = 0; i < params_amount; i++)
     {
       const AsyncWebParameter *p = request->getParam(i);
       if (strcmp(p->name().c_str(), PARAM_INPUT_ssid) == 0) this->ssid = String(p->value());
-      else if (strcmp(p->name().c_str(), PARAM_INPUT_psw) == 0) this->password = String(p->value()); 
-      else if (strcmp(p->name().c_str(), "BAUDRATE") == 0) this->baud_rate = (uint32_t)strtol((p->value()).c_str(), NULL, 10);
+      else if (strcmp(p->name().c_str(), PARAM_INPUT_psw) == 0) this->password = String(p->value());  
+      else if (strcmp(p->name().c_str(), PARAM_INPUT_hostname) == 0) this->hostname = String(p->value());
+      else if (strcmp(p->name().c_str(), PARAM_INPUT_bt_device_name) == 0) this->bt_device_name = String(p->value());
+      else if (strcmp(p->name().c_str(), PARAM_INPUT_baudrate) == 0) this->baud_rate = (uint32_t)strtol((p->value()).c_str(), NULL, 10);
       else if (std::regex_match(p->name().c_str(), match, pattern))
       {
           // we have a match to a command attribute. 
@@ -262,6 +274,10 @@ String Config::processor(const String &var)
   if (var == "SSID") return this->ssid;
   if (var == "PWD") return this->password;
   if (var == "BAUDRATE") return String(this->baud_rate);
+  if (var == "BT_DEVICE_NAME") return this->bt_device_name;
+  if (var == "HOSTNAME") return this->hostname;  
+  if (var == "ENABLE_WIFI") return this->enable_wifi ? F("checked") : F("");
+  if (var == "ENABLE_BT") return this->enable_bt ? F("checked") : F("");
   if (std::regex_match(var.c_str(), match, pattern))
   { 
     if (match[1].matched)
@@ -271,9 +287,9 @@ String Config::processor(const String &var)
       if(!match[2].matched && match[3].matched) return Command_t::escape_ctrl_characters(Commands[idx]._command_off);
       if(match[2].matched && !match[3].matched) return Commands[idx]._name_on;
       if(match[2].matched && match[3].matched) return Commands[idx]._name_off;
-      if(match[4].matched) return Commands[idx]._zero_x ? "checked" : "";
-      if(match[5].matched) return Commands[idx]._zero_y ? "checked" : "";
-      if(match[6].matched) return Commands[idx]._zero_z ? "checked" : "";
+      if(match[4].matched) return Commands[idx]._zero_x ? F("checked") : F("");
+      if(match[5].matched) return Commands[idx]._zero_y ? F("checked") : F("");
+      if(match[6].matched) return Commands[idx]._zero_z ? F("checked") : F("");
     }
   }
   Logger.Info_f(F("Unknonw token: %s"), var.c_str());
@@ -397,6 +413,10 @@ void Config::write_values_to_eeprom()
   int pos = write_string_to_eeprom(0, "OK");
 
   DynamicJsonDocument config = DynamicJsonDocument(EEPROM_SIZE);
+  config["enable_wifi"] = this->enable_wifi;
+  config["enable_bt"] = this->enable_bt;
+  config["hostname"] = this->hostname;
+  config["bt_device_name"] = this->bt_device_name;
   config["ssid"] = this->ssid;
   config["pwd"] = this->password;
   config["speed"] = this->baud_rate;
