@@ -214,6 +214,9 @@ void Config::StartAP()
     });
     if(this->baud_rate != baudrate) ESP.restart();
   });
+  this->server.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send(200, "image/x-icon", favicon_ico, favicon_ico_len);
+  });
   server.begin();
 }
 
