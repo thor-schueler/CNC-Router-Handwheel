@@ -12,8 +12,8 @@ const char *PARAM_INPUT_psw = "psw";
 const char *PARAM_INPUT_baudrate = "BAUDRATE";
 const char *PARAM_INPUT_bt_device_name = "BT_DEVICE_NAME";
 const char *PARAM_INPUT_hostname = "HOSTNAME";
-const char *PARAM_INPUT_enable_wifi = "Enable_WIFI";
-const char *PARAM_INPUT_enable_bt = "Enable_BT";
+const char *PARAM_INPUT_enable_wifi = "ENABLE_WIFI";
+const char *PARAM_INPUT_enable_bt = "ENABLE_BT";
 
 /**
  * @brief Static web server object.
@@ -353,6 +353,10 @@ void Config::read_values_from_eeprom(bool print)
     String s = read_string_from_eeprom(pos, &pos);
     DynamicJsonDocument d = DynamicJsonDocument(EEPROM_SIZE);
     deserializeJson(d, s);
+    this->enable_wifi = d["enable_wifi"]; 
+    this->enable_bt = d["enable_bt"];
+    this->hostname = String(d["hostname"].as<String>());
+    this->bt_device_name = String(d["bt_device_name"].as<String>());
     this->ssid = String(d["ssid"].as<String>());
     this->password = String(d["pwd"].as<String>());
     this->baud_rate = d["speed"];

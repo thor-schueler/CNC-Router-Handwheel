@@ -93,7 +93,7 @@ class Config
      * @brief The Bluetooth Device Name
      * 
      */
-    String bt_device_name = F("CNC Handwheel Controller");
+    String bt_device_name = F("CNC Handwheel");
 
     /**
      * @brief Whether to enable WIFI

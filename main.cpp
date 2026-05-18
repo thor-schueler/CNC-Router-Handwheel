@@ -168,16 +168,16 @@ void setup()
   {
     Logger.Info_f(F("Checking Configuration AP Enable on pin GPIO%i."), AP_ENABLE_PIN);
     pinMode(AP_ENABLE_PIN, INPUT_PULLUP); 
-    if(digitalRead(AP_ENABLE_PIN) == HIGH)
+    if(digitalRead(AP_ENABLE_PIN) == LOW)
     {
-      Logger.Info_f(F("Config AP enabled. Pull GPIO%i low to disable the Config AP."), AP_ENABLE_PIN);
+      Logger.Info_f(F("Config AP enabled. Pull GPIO%i high to disable the Config AP."), AP_ENABLE_PIN);
       config_mode = true;
       config.StartAP();
     }
     else
     {
       config_mode = false;
-      Logger.Info_f(F("Config AP disabled. Do not pull GPIO%i low to enable the Config AP."), AP_ENABLE_PIN);  
+      Logger.Info_f(F("Config AP disabled. Pull GPIO%i low to enable the Config AP."), AP_ENABLE_PIN);  
     }
   }
   //if(config_mode)

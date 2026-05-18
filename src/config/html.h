@@ -18,12 +18,12 @@ const char index_html[] PROGMEM = R"rawliteral(
     <section>
       <form action="/" method="post">
         <h3>WIFI/BT Configuration</h3>
-        <input type="checkbox" id="Enable_WIFI" name="Enable_WIFI" %Enable_WIFI%><label for="Enable_WIFI"> Enable WIFI</label><br>
+        <input type="checkbox" id="ENABLE_WIFI" name="ENABLE_WIFI" %ENABLE_WIFI%><label for="ENABLE_WIFI"> Enable WIFI</label><br>
         <label for="HOSTNAME">Host Name:</label><br><input maxlength="32" size="32" type="text" id="HOSTNAME" name="HOSTNAME" value="%HOSTNAME%"><br>
         <label for="SSID">Wlan Name (SSID):</label><br><input maxlength="32" size="32" type="text" id="SSID" name="SSID" value="%SSID%"><br>
         <label for="psw">Password:</label><br><input type="password" id="psw" maxlength="32" size="32" name="psw" value="%PWD%"><br><br>
-        <input type="checkbox" id="Enable_BT" name="Enable_BT" %Enable_BT%><label for="Enable_BT"> Enable Bluetooth</label><br>
-        <label for="bt_device_name">Bluetooth Device Name:</label><br><input maxlength="32" size="32" type="text" id="bt_device_name" name="bt_device_name" value="%BT_DEVICE_NAME%"><br>
+        <input type="checkbox" id="ENABLE_BT" name="ENABLE_BT" %ENABLE_BT%><label for="ENABLE_BT"> Enable Bluetooth</label><br>
+        <label for="BT_DEVICE_NAME">Bluetooth Device Name:</label><br><input maxlength="32" size="32" type="text" id="BT_DEVICE_NAME" name="BT_DEVICE_NAME" value="%BT_DEVICE_NAME%"><br>
         <hr/>
         <h3>Command Configuration</h3>
         <table border="0"> 
