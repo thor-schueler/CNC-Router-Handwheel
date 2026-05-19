@@ -84,6 +84,11 @@ void BatteryGauge::runner(void* args)
         _this->_status.time_to_full = c_rate > 0.0f ? (c_rate >= 0.1f ? (100-soc) /c_rate * 3600.0f : (soc >= 90 ? 0 : INFINITY)) : INFINITY; // in seconds
         _this->_status.battery_present = (vcell > 2500 && status != 0xFFFF) || !(c_pin && d_pin);
         _this->print_status();
+
+        if(_this->_display != nullptr)
+        {
+            _this->_display->write_battery_status(_this->_status);
+        }
         vTaskDelay(pdMS_TO_TICKS(5000));
     }
 }

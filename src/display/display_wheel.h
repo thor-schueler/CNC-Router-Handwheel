@@ -6,6 +6,7 @@
 
 #include "Arduino.h"
 #include "../display_spi/display_spi.h"
+#include "../battery_gauge/battery_status.h"
 
 #define ARROW_MIDDLE_ADJ(i) (uint8_t)((i <= 5) ? std::ceil(static_cast<float>(i) / 2) : std::floor(static_cast<float>(i - 1) / 3))
 
@@ -100,8 +101,9 @@ class DISPLAY_Wheel:public DISPLAY_SPI
 
 		/**
 		 * @brief Writes the battery status to the display
+		 * @param status - The battery status containing information such as state of charge, time to empty, etc.
 		 */
-		void write_battery_status();
+		void write_battery_status(BatteryStatus_t status);
 
 		/**
 		 * @brief Writes the last command into the display

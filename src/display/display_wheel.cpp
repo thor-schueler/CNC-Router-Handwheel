@@ -32,7 +32,6 @@ void DISPLAY_Wheel::init()
     draw_background(lcars, lcars_size);
     draw_image(splash, splash_size, w_area_x1, w_area_y1, w_area_x2-w_area_x1, w_area_y2-w_area_y1);
     write_connection_status(false, false, false);
-    write_battery_status();
 
     Logger.Info(F("Attempting allocation of screen scrolling memory buffer..."));
     Logger.Info_f(F("....Largest free block: %d"), heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
@@ -397,11 +396,57 @@ void DISPLAY_Wheel::write_axis(Axis axis)
 
 /**
  * @brief Writes the battery status to the display
+ * @param status - The battery status containing information such as state of charge, time to empty, etc.
  */
-void DISPLAY_Wheel::write_battery_status()
+void DISPLAY_Wheel::write_battery_status(BatteryStatus_t status)
 {
-    draw_image(battery, battery_size, 20, 301, 40, 12);
-}
+    static bool is_first = true;
+    static bool last_charging = false;
+    static uint8_t last_state_of_charge = 0;
+    static uint8_t last_fill_width = 255;
+
+    // display the correct gauge icon. 
+    if(is_first || status.charging != last_charging)
+    {
+      last_charging = status.charging;
+      if(status.charging)
+      {
+        draw_image(battery_charging, battery_charging_size, 20, 301, 40, 12);
+      }
+      else
+      {
+        draw_image(battery, battery_size, 20, 301, 40, 12);
+      }
+    }
+    
+    // fill the gauge according to the state of charge
+    if(is_first || status.state_of_charge != last_state_of_charge)
+    {
+      last_state_of_charge = status.state_of_charge;
+      uint8_t fillWidth = (uint8_t)((status.state_of_charge * 17.0)/100.0);
+      if(fillWidth != last_fill_width)
+      {
+        last_fill_width = fillWidth;
+        fill_rect(42, 303, 17, 8, 0x0);
+        fill_rect(42, 303, fillWidth, 8, RGB_to_565(40,135,0));
+      }
+
+      // write actual soc percentage
+      fill_rect(16, 302, 22, 9, RGB_to_565(32,96,252));
+      set_text_back_color(RGB_to_565(32,96,252)); 
+      set_text_color(0xffff);
+      set_text_size(1);
+      print_string(String(status.state_of_charge) + "%", 16, 302); 
+    }
+
+    // write cell voltate and charge rate
+    fill_rect(3, 274, 60, 18, RGB_to_565(32,96,252));
+    set_text_back_color(RGB_to_565(32,96,252)); 
+    set_text_color(0xffff);
+    set_text_size(1);
+    print_string(String(status.vcell) + "V, " + String(status.c_rate) + "%/hr", 3, 274);
+    print_string(String("Est to ") + (status.c_rate >= 0.0 ? "full: " +  String(status.time_to_full/3600) : "empty: " + String(status.time_to_empty/3600)) + "hr", 3, 283);
+  }
 
 /**
  * @brief Writes the last command into the display

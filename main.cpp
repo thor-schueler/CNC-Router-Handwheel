@@ -210,11 +210,10 @@ void setup()
   }
   
   ConnectionMonitor::get_instance()->set_display_instance(wheel->get_display());
+  BatteryGauge::set_display_instance(wheel->get_display());
   Logger.Info(F("... Init done"));
   Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap()); 
   Logger.Info_f(F("Free PSRAM: %d"), ESP.getFreePsram());
-
-  BatteryGauge::get_instance();
 }
 
 /**

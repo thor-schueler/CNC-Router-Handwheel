@@ -4,6 +4,8 @@
 #include "Arduino.h"
 #include <Wire.h>
 #include <driver/i2c.h>
+#include "battery_status.h"
+#include "../display/display_wheel.h"
 
 #ifndef _BATTERY_GAUGE_H_
 #define _BATTERY_GAUGE_H_
@@ -13,23 +15,6 @@
 
 #define MCP73871_C_PIN 36
 #define MCP73871_D_PIN 39
-
-/**
- * @brief This structure contains information for a particular command. 
- */
-typedef struct BatterStatus
-{
-    bool charging = false;
-    bool precondition = false;
-    bool fast_charging = false;
-    bool battery_present = false;
-    uint8_t state_of_charge = 0;
-    float time_to_empty = 0;
-    float time_to_full = 0;
-    float c_rate = 0.0f;
-    float vcell = 0.0;
-
-} BatteryStatus_t;
 
 /**
  * @brief Implements the batter gauge functionality using the MAX17048 fuel gauge IC. This is a singleton pattern implementation. 
@@ -56,6 +41,12 @@ class BatteryGauge
          * @brief Prints the battery status to the serial console for debugging purposes.
          */
         static void print_status();
+
+        /** 
+         * @brief Sets the display instance for the battery gauge.
+         * @param display - Pointer to the display instance.
+         */
+        static void set_display_instance(DISPLAY_Wheel* display){ BatteryGauge::instance->_display = display;  }
 
     protected:
 
@@ -148,6 +139,7 @@ class BatteryGauge
 
         static BatteryGauge* instance;
         BatteryStatus_t _status;
+        DISPLAY_Wheel* _display = nullptr;
 };
 
 
