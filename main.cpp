@@ -29,6 +29,7 @@
 #include "src/logging/SerialLogger.h"
 #include "src/display/display_wheel.h"
 #include "src/connection_monitor/connection_monitor.h"
+#include "src/battery_gauge/battery_gauge.h"
 #include "src/wheel/wheel.h"
 
 #define TELEMETRY_FREQUENCY_MILLISECS 120000
@@ -212,6 +213,8 @@ void setup()
   Logger.Info(F("... Init done"));
   Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap()); 
   Logger.Info_f(F("Free PSRAM: %d"), ESP.getFreePsram());
+
+  BatteryGauge::get_instance();
 }
 
 /**
