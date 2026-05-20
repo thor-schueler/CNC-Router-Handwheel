@@ -404,23 +404,25 @@ void DISPLAY_Wheel::write_battery_status(BatteryStatus_t status)
     static bool last_charging = false;
     static uint8_t last_state_of_charge = 0;
     static uint8_t last_fill_width = 255;
+    bool force_fill = true;
 
     // display the correct gauge icon. 
     if(is_first || status.charging != last_charging)
     {
       last_charging = status.charging;
+      force_fill = true;
       if(status.charging)
       {
-        draw_image(battery_charging, battery_charging_size, 20, 301, 40, 12);
+        draw_image(battery_charging, battery_charging_size, 27, 301, 33, 12);
       }
       else
       {
-        draw_image(battery, battery_size, 20, 301, 40, 12);
+        draw_image(battery, battery_size, 27, 301, 33, 12);
       }
     }
     
     // fill the gauge according to the state of charge
-    if(is_first || status.state_of_charge != last_state_of_charge)
+    if(is_first || force_fill || status.state_of_charge != last_state_of_charge)
     {
       last_state_of_charge = status.state_of_charge;
       uint8_t fillWidth = (uint8_t)((status.state_of_charge * 17.0)/100.0);
@@ -432,20 +434,24 @@ void DISPLAY_Wheel::write_battery_status(BatteryStatus_t status)
       }
 
       // write actual soc percentage
-      fill_rect(16, 302, 22, 9, RGB_to_565(32,96,252));
+      fill_rect(5, 303, 22, 9, RGB_to_565(32,96,252));
       set_text_back_color(RGB_to_565(32,96,252)); 
       set_text_color(0xffff);
       set_text_size(1);
-      print_string(String(status.state_of_charge) + "%", 16, 302); 
+      print_string(String(status.state_of_charge) + "%", 5, 303); 
     }
 
     // write cell voltate and charge rate
-    fill_rect(3, 274, 60, 18, RGB_to_565(32,96,252));
+    fill_rect(5, 276, 60, 18, RGB_to_565(32,96,252));
     set_text_back_color(RGB_to_565(32,96,252)); 
     set_text_color(0xffff);
     set_text_size(1);
-    print_string(String(status.vcell) + "V, " + String(status.c_rate) + "%/hr", 3, 274);
-    print_string(String("Est to ") + (status.c_rate >= 0.0 ? "full: " +  String(status.time_to_full/3600) : "empty: " + String(status.time_to_empty/3600)) + "hr", 3, 283);
+    print_string(String(status.vcell/1000.0, 2) + "V", 5, 276);
+    print_string(String(status.c_rate) + "%/hr", 5, 285);
+
+    fill_rect(79, 302, 100, 9, RGB_to_565(176, 0, 252));
+    set_text_back_color(RGB_to_565(175, 0, 252)); 
+    print_string(String("Est to ") + (status.c_rate >= 0.0 ? "full: " +  String(status.time_to_full/3600, 0) : "empty: " + String(status.time_to_empty/3600, 0)) + "hr", 79, 303);
   }
 
 /**

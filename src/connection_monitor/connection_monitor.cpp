@@ -29,7 +29,7 @@ ConnectionMonitor* ConnectionMonitor::get_instance()
 ConnectionMonitor::ConnectionMonitor()
 {
     Logger.Info(F("Initializing Connection Monitor"));
-    Logger.Info(F("....Starting Monitor Task"));
+    Logger.Info(F("....Starting Connection Monitor Task"));
     xTaskCreatePinnedToCore(runner, "connection_monitor", 1024, this, 1, &monitor, 1);
     Logger.Info(F("Done."));
 }

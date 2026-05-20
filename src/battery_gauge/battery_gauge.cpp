@@ -26,7 +26,8 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "battery_gauge.h"
 #include "../logging/SerialLogger.h"
 
-BatteryGauge* BatteryGauge::instance = nullptr;
+BatteryGauge* BatteryGauge::_instance = nullptr;
+DISPLAY_Wheel* BatteryGauge::_display = nullptr;
 
 /**
  * @brief Gets the instance of the Battery Gauge Singleton.
@@ -34,11 +35,11 @@ BatteryGauge* BatteryGauge::instance = nullptr;
  */
 BatteryGauge* BatteryGauge::get_instance()
 {
-    if (instance == nullptr)
+    if (BatteryGauge::_instance == nullptr)
     {
-        instance = new BatteryGauge();
+        BatteryGauge::_instance = new BatteryGauge();
     }
-    return instance;
+    return BatteryGauge::_instance;
 }
 
 /**
@@ -52,7 +53,7 @@ BatteryGauge::BatteryGauge()
     Logger.Info(F("....Initializing MAX17048 fuel gauge"));
     max17048_init();
     Logger.Info(F("....Starting Battery Gauge Task"));
-    xTaskCreatePinnedToCore(runner, "battery_gauge", 2048, this, 1, nullptr, 1);
+    xTaskCreatePinnedToCore(runner, "battery_gauge", 2304, this, 1, nullptr, 1);
     Logger.Info(F("Battery Gauge initialization complete."));
 }
 

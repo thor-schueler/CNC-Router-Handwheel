@@ -13,8 +13,10 @@
 #define MAX17048_ADDRESS 0x36
 #define MAX17048_INT_PIN 34
 
-#define MCP73871_C_PIN 36
-#define MCP73871_D_PIN 39
+//#define MCP73871_C_PIN 36
+//#define MCP73871_D_PIN 39
+#define MCP73871_C_PIN 39
+#define MCP73871_D_PIN 36
 
 /**
  * @brief Implements the batter gauge functionality using the MAX17048 fuel gauge IC. This is a singleton pattern implementation. 
@@ -35,7 +37,7 @@ class BatteryGauge
          * @brief Gets the status of the battery.
          * @returns Current battery status.
          */
-        static BatteryStatus_t get_status() { return BatteryGauge::instance->_status; }
+        static BatteryStatus_t get_status() { return BatteryGauge::get_instance()->_status; }
 
         /**
          * @brief Prints the battery status to the serial console for debugging purposes.
@@ -46,7 +48,7 @@ class BatteryGauge
          * @brief Sets the display instance for the battery gauge.
          * @param display - Pointer to the display instance.
          */
-        static void set_display_instance(DISPLAY_Wheel* display){ BatteryGauge::instance->_display = display;  }
+        static void set_display_instance(DISPLAY_Wheel* display){ BatteryGauge::get_instance()->_display = display;  }
 
     protected:
 
@@ -137,9 +139,10 @@ class BatteryGauge
         bool i2c_is_initialized(i2c_port_t port = I2C_NUM_0);
 
 
-        static BatteryGauge* instance;
+        static BatteryGauge* _instance;
+        static DISPLAY_Wheel* _display;
         BatteryStatus_t _status;
-        DISPLAY_Wheel* _display = nullptr;
+
 };
 
 
