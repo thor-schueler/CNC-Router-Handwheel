@@ -184,6 +184,15 @@ class DISPLAY_Wheel:public DISPLAY_SPI
 		 */
 		int count_lines(const String& s);
 
+		/**
+		 * @brief Prints a time string in the format of dd hh mm to the display
+		 *
+		 * @param time_seconds - The time in seconds to convert to a string and print
+		 * @param x - The x coordinate to print the string at
+		 * @param y - The y coordinate to print the string at
+		 */
+		void print_time_string(uint32_t time_seconds, uint16_t x, uint16_t y);
+
 		uint16_t w_area_x1;
 		uint16_t w_area_y1;
 		uint16_t w_area_x2;

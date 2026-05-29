@@ -26,6 +26,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "battery_gauge.h"
 #include "../logging/SerialLogger.h"
 
+//#include "../wheel/wheel.h"
+//extern Wheel *wheel;
+
+
 BatteryGauge* BatteryGauge::_instance = nullptr;
 DISPLAY_Wheel* BatteryGauge::_display = nullptr;
 
@@ -48,7 +52,10 @@ BatteryGauge* BatteryGauge::get_instance()
 BatteryGauge::BatteryGauge()
 {
     Logger.Info(F("Initializing Battery Gauge"));
-    Logger.Info_f(F("....Initializing interrupt GPIO on ping %d"), MAX17048_INT_PIN);
+    Logger.Info_f(F("....Initializing MPC733871 stat GPIO on pins %d and %d"), MCP73871_C_PIN, MCP73871_D_PIN);
+    pinMode(MCP73871_C_PIN, INPUT);
+    pinMode(MCP73871_D_PIN, INPUT);
+    Logger.Info_f(F("....Initializing MAX17048 interrupt GPIO on pin %d"), MAX17048_INT_PIN);
     pinMode(MAX17048_INT_PIN, INPUT);
     Logger.Info(F("....Initializing MAX17048 fuel gauge"));
     max17048_init();
@@ -72,17 +79,43 @@ void BatteryGauge::runner(void* args)
         float vcell = _this->max17048_getVoltage();
         float soc = _this->max17048_getSOC();
         float c_rate = _this->max17048_getCRate();
-        bool c_pin = digitalRead(MCP73871_C_PIN);
-        bool d_pin = digitalRead(MCP73871_D_PIN);
+        uint16_t c_pin_value = analogRead(MCP73871_C_PIN);
+        uint16_t d_pin_value = analogRead(MCP73871_D_PIN);   
+        bool c_pin = c_pin_value > 2048;
+        bool d_pin = d_pin_value > 2048;
+            // this ia a dirty hack. When originally working with the MCP7381, I didn't realize that logic levels on C & D pins are pulled 
+            // above VCC (3.3V) because of the diodes to VIN. As a result, I fried the input buffer of ports 36 and 39. So digitalRead returns 
+            // false regardless of actual state of the pin. Surprisingly, analogRead still returns a value that changes based on the state of the pin, 
+            // even though especially the D pin reading on GPIO39 is iffy and requires a strong pull to VCC for a good reading. 
+            // with a new board, this should be fixed and I can switch back to digitalRead, but for now this is a workaround to get 
+            // the battery status working on the existing hardware.
+            //
+            // Note if you are building this: make sure to either remove the LEDs from the MPC73871 board or cut the trace that feeds them from VIN and instead 
+            // Connect that trace to VCC (3.3V).
 
+        //Serial.print("  A36=");
+        //Serial.print(d_pin_value);
+        //Serial.print("  A39=");
+        //Serial.println(c_pin_value);
+        //if(wheel != nullptr && wheel->_bt != nullptr && wheel->_bt->hasClient())
+        //{
+        //    wheel->_bt->printf("C Pin: %d (%d), D Pin: %d (%d)\n", c_pin_value, c_pin, d_pin_value, d_pin);
+        //}
+        
+        _this->_status.state_of_charge = static_cast<uint8_t>(constrain(roundf(soc), 0.0f, 100.0f));
+        _this->_status.external_power = (!c_pin && _this->_status.state_of_charge > 10 ) || (c_pin && !d_pin);
+            // this is a bit of heuristics and I am not sure how reliable it is. Ideally, we'd connect to the PG pin of the MPC73871 but I do not have a 
+            // spare GPIO. So instead, we are assuming that if the batter is above 10% and c_pin is low we are charging (The only other time c_pin should be low is 
+            // various error conditions or low battery, hence the 10% threshold). The other condition is that if c_pin is high but d_pin is low, we are also charging, 
+            // as this is the condition for charge complete, but power present.
         _this->_status.charging = !c_pin;
-        _this->_status.precondition = !c_pin && !d_pin;
-        _this->_status.fast_charging = !c_pin && d_pin;        
+        _this->_status.carge_complete = c_pin && !d_pin;
+        _this->_status.low_battery = !c_pin && d_pin && !_this->_status.external_power;       
         _this->_status.vcell = vcell;
         _this->_status.c_rate = c_rate;
-        _this->_status.state_of_charge = static_cast<uint8_t>(constrain(roundf(soc), 0.0f, 100.0f));
-        _this->_status.time_to_empty =  c_rate > 0.0f ? INFINITY : (c_rate <= -0.1f ? soc /c_rate * -3600.0f : (soc <= 3 ? 0 : INFINITY)); // in seconds
-        _this->_status.time_to_full = c_rate > 0.0f ? (c_rate >= 0.1f ? (100-soc) /c_rate * 3600.0f : (soc >= 90 ? 0 : INFINITY)) : INFINITY; // in seconds
+        
+        _this->_status.time_to_empty =  c_rate < -0.1f ? soc /c_rate * -3600.0f : (soc <= 3 ? 0 : INFINITY); // in seconds
+        _this->_status.time_to_full = c_rate > 0.1f ? (100-soc) /c_rate * 3600.0f : (soc >= 99.5 ? 0 : INFINITY); // in seconds
         _this->_status.battery_present = (vcell > 2500 && status != 0xFFFF) || !(c_pin && d_pin);
         _this->print_status();
 
@@ -106,10 +139,27 @@ void BatteryGauge::print_status()
     Logger.Info_f(F("...C-Rate: %.2f %%/h"), g->_status.c_rate);
     Logger.Info_f(F("...Time to Empty: %s"), isinf(g->_status.time_to_empty) ? "inf" : String(g->_status.time_to_empty / 3600.0f, 2) + "h");
     Logger.Info_f(F("...Time to Full: %s"), isinf(g->_status.time_to_full) ? "inf" : String(g->_status.time_to_full / 3600.0f, 2) + "h");
+    Logger.Info_f(F("...External Power: %s"), g->_status.external_power ? "Yes" : "No");
     Logger.Info_f(F("...Charging: %s"), g->_status.charging ? "Yes" : "No");
-    Logger.Info_f(F("...Precondition: %s"), g->_status.precondition ? "Yes" : "No");
-    Logger.Info_f(F("...Fast Charging: %s"), g->_status.fast_charging   ? "Yes" : "No");
+    Logger.Info_f(F("...Charging Complete: %s"), g->_status.carge_complete ? "Yes" : "No");
+    Logger.Info_f(F("...Low Battery: %s"), g->_status.low_battery ? "Yes" : "No");
     Logger.Info_f(F("...Battery Present: %s"), g->_status.battery_present ? "Yes" : "No");
+    //if(wheel != nullptr && wheel->_bt != nullptr && wheel->_bt->hasClient())
+    //{
+    //    wheel->_bt->printf(
+    //        "Battery Status:\n  Voltage: %.2f mV\n  State of Charge: %d%%\n  C-Rate: %.2f %%/h\n  Time to Empty: %s\n  Time to Full: %s\n  External Power: %s\n  Charging: %s\n  Charging Complete: %s\n  Low Battery: %s\n  Battery Present: %s\n",
+    //        g->_status.vcell,
+    //        g->_status.state_of_charge,
+    //        g->_status.c_rate,
+    //        isinf(g->_status.time_to_empty) ? "inf" : String(g->_status.time_to_empty / 3600.0f, 2) + "h",
+    //        isinf(g->_status.time_to_full) ? "inf" : String(g->_status.time_to_full / 3600.0f, 2) + "h",
+    //        g->_status.external_power ? "Yes" : "No",
+    //        g->_status.charging ? "Yes" : "No",
+    //        g->_status.carge_complete ? "Yes" : "No",
+    //        g->_status.low_battery ? "Yes" : "No",
+    //        g->_status.battery_present ? "Yes" : "No"
+    //    );
+    //}
 }
 
 /**

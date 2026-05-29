@@ -404,13 +404,13 @@ void DISPLAY_Wheel::write_battery_status(BatteryStatus_t status)
     static bool last_charging = false;
     static uint8_t last_state_of_charge = 0;
     static uint8_t last_fill_width = 255;
-    bool force_fill = true;
+    static float last_vcell = 0.0;
+    static float last_c_rate = 0.0;
 
     // display the correct gauge icon. 
     if(is_first || status.charging != last_charging)
     {
       last_charging = status.charging;
-      force_fill = true;
       if(status.charging)
       {
         draw_image(battery_charging, battery_charging_size, 27, 301, 33, 12);
@@ -420,9 +420,12 @@ void DISPLAY_Wheel::write_battery_status(BatteryStatus_t status)
         draw_image(battery, battery_size, 27, 301, 33, 12);
       }
     }
-    
+    set_text_back_color(RGB_to_565(32,96,252)); 
+    set_text_color(0xffff);
+    set_text_size(1);
+        
     // fill the gauge according to the state of charge
-    if(is_first || force_fill || status.state_of_charge != last_state_of_charge)
+    if(is_first || status.state_of_charge != last_state_of_charge)
     {
       last_state_of_charge = status.state_of_charge;
       uint8_t fillWidth = (uint8_t)((status.state_of_charge * 17.0)/100.0);
@@ -434,25 +437,53 @@ void DISPLAY_Wheel::write_battery_status(BatteryStatus_t status)
       }
 
       // write actual soc percentage
-      fill_rect(5, 303, 22, 9, RGB_to_565(32,96,252));
-      set_text_back_color(RGB_to_565(32,96,252)); 
-      set_text_color(0xffff);
-      set_text_size(1);
-      print_string(String(status.state_of_charge) + "%", 5, 303); 
+      fill_rect(5, 294, 22, 9, RGB_to_565(32,96,252));
+      print_string(String(status.state_of_charge) + "%", 5, 294); 
     }
 
-    // write cell voltate and charge rate
-    fill_rect(5, 276, 60, 18, RGB_to_565(32,96,252));
-    set_text_back_color(RGB_to_565(32,96,252)); 
-    set_text_color(0xffff);
-    set_text_size(1);
-    print_string(String(status.vcell/1000.0, 2) + "V", 5, 276);
-    print_string(String(status.c_rate) + "%/hr", 5, 285);
+    // write cell voltage and charge rate
+    if(is_first || status.vcell != last_vcell)
+    {
+      last_vcell = status.vcell;
+      fill_rect(5, 276, 60, 9, RGB_to_565(32,96,252));
+      print_string(String(status.vcell/1000.0, 2) + "V", 5, 276);
+    }
+    if(is_first || status.c_rate != last_c_rate)
+    {
+      last_c_rate = status.c_rate;
+      fill_rect(5, 285, 60, 9, RGB_to_565(32,96,252));
+      if(last_c_rate > 0.1 || last_c_rate < -0.1) print_string(String(status.c_rate) + "%/hr", 5, 285);
+    }
 
-    fill_rect(79, 302, 100, 9, RGB_to_565(176, 0, 252));
-    set_text_back_color(RGB_to_565(175, 0, 252)); 
-    print_string(String("Est to ") + (status.c_rate >= 0.0 ? "full: " +  String(status.time_to_full/3600, 0) : "empty: " + String(status.time_to_empty/3600, 0)) + "hr", 79, 303);
+    fill_rect(79, 293, 105, 18, RGB_to_565(176, 0, 252));
+    set_text_back_color(RGB_to_565(175, 0, 252));
+    if((status.c_rate < -0.1 || status.c_rate > 0.1) && ((status.time_to_full > 0 && status.time_to_full < INFINITY) || (status.time_to_empty > 0 &&status.time_to_empty < INFINITY)))
+    {
+      print_string(String("Est to ") + (status.c_rate >= 0.0 ? "full: " : "empty: "), 79, 293);
+      if(status.c_rate > 0.0 && status.time_to_full > 0 && status.time_to_full < INFINITY)
+      {
+        print_time_string(status.time_to_full, 79, 303);
+      }
+      else if(status.c_rate < 0.0 && status.time_to_empty > 0 && status.time_to_empty < INFINITY)
+      {
+        print_time_string(status.time_to_empty, 79, 303);
+      }
+    }
   }
+
+/**
+ * @brief Prints a time string in the format of dd hh mm to the display
+ *
+ * @param time_seconds - The time in seconds to convert to a string and print
+ * @param x - The x coordinate to print the string at
+ * @param y - The y coordinate to print the string at
+ */
+void DISPLAY_Wheel::print_time_string(uint32_t time_seconds, uint16_t x, uint16_t y)
+{
+  String s = (time_seconds >= 172800) ? String(int(time_seconds/86400)) + "d " + String((int(time_seconds)%86400)/3600) + "hrs " + String(((int(time_seconds)%3600))/60) + "min" : (time_seconds >= 3600 ? String(int(time_seconds/3600)) + "hrs " + String((int(time_seconds)%3600)/60) + "min" : String(int(time_seconds/60)) + " min");
+  print_string(s, x, y);
+}
+
 
 /**
  * @brief Writes the last command into the display

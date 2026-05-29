@@ -13,8 +13,6 @@
 #define MAX17048_ADDRESS 0x36
 #define MAX17048_INT_PIN 34
 
-//#define MCP73871_C_PIN 36
-//#define MCP73871_D_PIN 39
 #define MCP73871_C_PIN 39
 #define MCP73871_D_PIN 36
 

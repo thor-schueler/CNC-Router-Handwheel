@@ -30,9 +30,10 @@ POSSIBILITY OF SUCH DAMAGE.
 typedef struct BatteryStatus
 {
     bool charging = false;
-    bool precondition = false;
-    bool fast_charging = false;
+    bool carge_complete = false;
+    bool low_battery = false;
     bool battery_present = false;
+    bool external_power = false;
     uint8_t state_of_charge = 0;
     float time_to_empty = 0;
     float time_to_full = 0;

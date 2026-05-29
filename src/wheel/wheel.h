@@ -112,6 +112,12 @@ class Wheel
         void set_bluetooth_instance(BluetoothSerial* bt) { _bt = bt; }
 
         /**
+         * @brief Gets the Bluetooth serial instance
+         * @return pointer to the Bluetooth serial instance
+         */
+        BluetoothSerial* get_bluetooth_instance() { return _bt; }
+
+        /**
          * @brief Writes a status message to the display
          * @param format - the format string
          * @param ... - variable argument list  
@@ -184,6 +190,7 @@ class Wheel
         DISPLAY_Wheel *_display = nullptr;
         PCF8575 *_pcf8575 = nullptr;
         BluetoothSerial *_bt = nullptr;
+
 
         TaskHandle_t _extendedGPIOWatcher;
         TaskHandle_t _displayRunner;
