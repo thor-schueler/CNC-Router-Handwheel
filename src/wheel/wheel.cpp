@@ -205,7 +205,7 @@ Wheel::Wheel()
     Logger.Info("....Create various tasks");
     xTaskCreatePinnedToCore(extended_GPIO_watcher, "extendedGPIOWatcher", 2048, this, 1, &_extendedGPIOWatcher, 0);
     xTaskCreatePinnedToCore(display_runner, "displayRunner", 1560, this, 1, &_displayRunner, 0);
-    xTaskCreatePinnedToCore(wheel_runner, "wheelRunner", 2048, this, 1, &_wheelRunner, 0);
+    xTaskCreatePinnedToCore(wheel_runner, "wheelRunner", 2560, this, 1, &_wheelRunner, 0);
     xTaskCreatePinnedToCore(ems_change_runner, "emsRunner", 1560, this, 1, &_emsChangeRunner, 0);
 
     Logger.Info("Startup done");
@@ -430,6 +430,34 @@ void Wheel::display_runner(void* args)
             xSemaphoreGive(_this->_display_mutex);
         }
         vTaskDelay(50);
+    }
+}
+
+/**
+ * @brief Writes the battery status to the display
+ * @param status - The battery status containing information such as state of charge, time to empty, etc.
+ */
+void Wheel::write_battery_status(BatteryStatus_t status)
+{
+    if (xSemaphoreTake(this->_display_mutex, portMAX_DELAY) == pdTRUE) 
+    {
+        _display->write_battery_status(status);
+        xSemaphoreGive(this->_display_mutex);
+    }
+}
+
+/**
+ * @brief Writes the connection status to the display
+ * @param has_usb - Whether the device had USB connectivity
+ * @param has_wifi - Whether the device has WiFi connectivity
+ * @param has_bt - Whether the device has Bluetooth connectivity
+ */
+void Wheel::write_connection_status(bool has_usb, bool has_wifi, bool has_bt)
+{
+    if (xSemaphoreTake(this->_display_mutex, portMAX_DELAY) == pdTRUE) 
+    {
+        _display->write_connection_status(has_usb, has_wifi, has_bt);
+        xSemaphoreGive(this->_display_mutex);
     }
 }
 

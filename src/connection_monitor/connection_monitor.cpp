@@ -61,9 +61,9 @@ void ConnectionMonitor::runner(void* args)
             _this->has_bt = false;
         }
 
-        if(_this->display != nullptr)
+        if(_this->_wheel != nullptr)
         {
-            _this->display->write_connection_status(_this->has_usb, _this->has_wifi, _this->has_bt);
+            _this->_wheel->write_connection_status(_this->has_usb, _this->has_wifi, _this->has_bt);
         }
         vTaskDelay(pdMS_TO_TICKS(MONITORING_PERIOD));
     }
@@ -83,12 +83,12 @@ void ConnectionMonitor::set_bluetooth_instance(BluetoothSerial* bt)
 }
 
 /**
- * @brief Sets the instance of the display manager to use to update
+ * @brief Sets the instance of the wheel manager to use to update
  * the display.
- * @param display - Pointer to a DISPLAY_Wheel instance. 
+ * @param wheel - Pointer to a Wheel instance. 
  */
-void ConnectionMonitor::set_display_instance(DISPLAY_Wheel* display)
+void ConnectionMonitor::set_wheel_instance(Wheel* wheel)
 {
-    if(display == nullptr) Logger.Info(F("ConnectionMonitor: Attempted to set display instance to null pointer"));
-    ConnectionMonitor::instance->display = display;
+    if(wheel == nullptr) Logger.Info(F("ConnectionMonitor: Attempted to set wheel instance to null pointer"));
+    ConnectionMonitor::instance->_wheel = wheel;
 }

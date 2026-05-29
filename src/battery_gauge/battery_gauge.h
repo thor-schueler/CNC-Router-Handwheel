@@ -5,7 +5,7 @@
 #include <Wire.h>
 #include <driver/i2c.h>
 #include "battery_status.h"
-#include "../display/display_wheel.h"
+#include "../wheel/wheel.h"
 
 #ifndef _BATTERY_GAUGE_H_
 #define _BATTERY_GAUGE_H_
@@ -43,10 +43,10 @@ class BatteryGauge
         static void print_status();
 
         /** 
-         * @brief Sets the display instance for the battery gauge.
-         * @param display - Pointer to the display instance.
+         * @brief Sets the wheel instance for the battery gauge.
+         * @param wheel - Pointer to the wheel instance.
          */
-        static void set_display_instance(DISPLAY_Wheel* display){ BatteryGauge::get_instance()->_display = display;  }
+        static void set_wheel_instance(Wheel* wheel){ BatteryGauge::get_instance()->_wheel = wheel;  }
 
     protected:
 
@@ -138,7 +138,8 @@ class BatteryGauge
 
 
         static BatteryGauge* _instance;
-        static DISPLAY_Wheel* _display;
+        static Wheel* _wheel;
+        TaskHandle_t _task_handle;
         BatteryStatus_t _status;
 
 };

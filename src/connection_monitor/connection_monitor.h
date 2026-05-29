@@ -6,7 +6,7 @@
 
 #include <Arduino.h>
 #include <BluetoothSerial.h>
-#include "../display/display_wheel.h"
+#include "../wheel/wheel.h"
 
 
 #define MONITORING_PERIOD 1000
@@ -32,11 +32,11 @@ class ConnectionMonitor
         static void set_bluetooth_instance(BluetoothSerial* bt);
 
         /**
-         * @brief Sets the instance of the display manager to use to update
+         * @brief Sets the instance of the wheel manager to use to update
          * the display.
-         * @param display - Pointer to a DISPLAY_Wheel instance. 
+         * @param wheel - Pointer to a Wheel instance. 
          */
-        static void set_display_instance(DISPLAY_Wheel* display);
+        static void set_wheel_instance(Wheel* wheel);
 
     protected:
 
@@ -60,7 +60,7 @@ class ConnectionMonitor
         TaskHandle_t monitor = NULL;
         
         static ConnectionMonitor* instance;
-        DISPLAY_Wheel* display = nullptr;
+        Wheel* _wheel = nullptr;
         BluetoothSerial* bt = nullptr;
 
 };

@@ -209,8 +209,8 @@ void setup()
     Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap()); 
   }
   
-  ConnectionMonitor::get_instance()->set_display_instance(wheel->get_display());
-  BatteryGauge::set_display_instance(wheel->get_display());
+  ConnectionMonitor::get_instance()->set_wheel_instance(wheel);
+  BatteryGauge::set_wheel_instance(wheel);
   Logger.Info(F("... Init done"));
   Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap()); 
   Logger.Info_f(F("Free PSRAM: %d"), ESP.getFreePsram());
@@ -225,4 +225,5 @@ void loop()
 {
   vTaskDelay(10000);
   Logger.Info_f(F("Free heap: %d"), ESP.getFreeHeap());
+  Logger.Info_f(F("Wheel Runner Stack Usage: %d"), uxTaskGetStackHighWaterMark(wheel->_wheelRunner));
 }

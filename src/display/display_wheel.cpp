@@ -423,7 +423,7 @@ void DISPLAY_Wheel::write_battery_status(BatteryStatus_t status)
     set_text_back_color(RGB_to_565(32,96,252)); 
     set_text_color(0xffff);
     set_text_size(1);
-        
+      
     // fill the gauge according to the state of charge
     if(is_first || status.state_of_charge != last_state_of_charge)
     {

@@ -26,12 +26,9 @@ POSSIBILITY OF SUCH DAMAGE.
 #include "battery_gauge.h"
 #include "../logging/SerialLogger.h"
 
-//#include "../wheel/wheel.h"
-//extern Wheel *wheel;
-
-
+    
 BatteryGauge* BatteryGauge::_instance = nullptr;
-DISPLAY_Wheel* BatteryGauge::_display = nullptr;
+Wheel* BatteryGauge::_wheel = nullptr;
 
 /**
  * @brief Gets the instance of the Battery Gauge Singleton.
@@ -60,7 +57,7 @@ BatteryGauge::BatteryGauge()
     Logger.Info(F("....Initializing MAX17048 fuel gauge"));
     max17048_init();
     Logger.Info(F("....Starting Battery Gauge Task"));
-    xTaskCreatePinnedToCore(runner, "battery_gauge", 2304, this, 1, nullptr, 1);
+    xTaskCreatePinnedToCore(runner, "battery_gauge", 2304, this, 1, &_task_handle, 1);
     Logger.Info(F("Battery Gauge initialization complete."));
 }
 
@@ -92,16 +89,7 @@ void BatteryGauge::runner(void* args)
             //
             // Note if you are building this: make sure to either remove the LEDs from the MPC73871 board or cut the trace that feeds them from VIN and instead 
             // Connect that trace to VCC (3.3V).
-
-        //Serial.print("  A36=");
-        //Serial.print(d_pin_value);
-        //Serial.print("  A39=");
-        //Serial.println(c_pin_value);
-        //if(wheel != nullptr && wheel->_bt != nullptr && wheel->_bt->hasClient())
-        //{
-        //    wheel->_bt->printf("C Pin: %d (%d), D Pin: %d (%d)\n", c_pin_value, c_pin, d_pin_value, d_pin);
-        //}
-        
+   
         _this->_status.state_of_charge = static_cast<uint8_t>(constrain(roundf(soc), 0.0f, 100.0f));
         _this->_status.external_power = (!c_pin && _this->_status.state_of_charge > 10 ) || (c_pin && !d_pin);
             // this is a bit of heuristics and I am not sure how reliable it is. Ideally, we'd connect to the PG pin of the MPC73871 but I do not have a 
@@ -119,10 +107,11 @@ void BatteryGauge::runner(void* args)
         _this->_status.battery_present = (vcell > 2500 && status != 0xFFFF) || !(c_pin && d_pin);
         _this->print_status();
 
-        if(_this->_display != nullptr)
+        if(_this->_wheel != nullptr)
         {
-            _this->_display->write_battery_status(_this->_status);
+            _this->_wheel->write_battery_status(_this->_status);
         }
+        Logger.Info_f(F("Battery Gauge Stack Usage: %d"), uxTaskGetStackHighWaterMark(_this->_task_handle));
         vTaskDelay(pdMS_TO_TICKS(5000));
     }
 }

@@ -9,6 +9,7 @@
 #include <BluetoothSerial.h>
 
 #include "PCF8575.h"
+#include "../battery_gauge/battery_status.h"
 #include "../display/display_wheel.h"
 
 #define PCF8575_ADDRESS 0x20
@@ -117,12 +118,29 @@ class Wheel
          */
         BluetoothSerial* get_bluetooth_instance() { return _bt; }
 
+
+        /**
+         * @brief Writes the battery status to the display
+         * @param status - The battery status containing information such as state of charge, time to empty, etc.
+         */
+        void write_battery_status(BatteryStatus_t status);
+
+        /**
+         * @brief Writes the connection status to the display
+         * @param has_usb - Whether the device had USB connectivity
+         * @param has_wifi - Whether the device has WiFi connectivity
+         * @param has_bt - Whether the device has Bluetooth connectivity
+         */
+        void write_connection_status(bool has_usb, bool has_wifi, bool has_bt); 
+
         /**
          * @brief Writes a status message to the display
          * @param format - the format string
          * @param ... - variable argument list  
          */
         void write_status_message(const String &format, ...);
+
+                TaskHandle_t _wheelRunner;
 
     protected:
 
@@ -194,7 +212,7 @@ class Wheel
 
         TaskHandle_t _extendedGPIOWatcher;
         TaskHandle_t _displayRunner;
-        TaskHandle_t _wheelRunner;
+
         TaskHandle_t _emsChangeRunner;
 
         SemaphoreHandle_t _display_mutex;
